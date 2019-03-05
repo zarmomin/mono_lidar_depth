@@ -39,7 +39,7 @@
 #include <matches_msg_ros/MatchesMsg.h>
 #include <matches_msg_ros/MatchesMsgWithOutlierFlag.h>
 #include <ros/ros.h>
-#include "convert.hpp"
+#include "matches_msg_conversions_ros/convert.hpp"
 #include "gtest/gtest.h"
 
 namespace {

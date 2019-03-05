@@ -32,6 +32,20 @@ add_dependencies(semantic_labels ${PROJECT_NAME}_gencfg) # For dynamic_reconfigu
 add_dependencies(semantic_labels ${PROJECT_NAME}_geninterface) # For rosinterface_handler
 target_link_libraries(semantic_labels ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
+#catkin_add_gtest(add_outlier_flag-test test/add_outlier_flag_node.cpp)
+#target_link_libraries(add_outlier_flag-test ${PROJECT_NAME})
+#catkin_add_gtest(add_outlier_flag_nodelet-test test/add_outlier_flag_nodelet.cpp)
+#target_link_libraries(add_outlier_flag_nodelet-test ${PROJECT_NAME})
+
+#catkin_add_gtest(mark_depth_outlier-test test/mark_depth_outlier_node.cpp)
+#target_link_libraries(mark_depth_outlier-test ${PROJECT_NAME})
+#catkin_add_gtest(mark_depth_outlier_nodelet-test test/mark_depth_outlier_nodelet.cpp)
+#target_link_libraries(mark_depth_outlier_nodelet-test ${PROJECT_NAME})
+
+#catkin_add_gtest(semantic_labels-test test/semantic_labels_node.cpp)
+#target_link_libraries(semantic_labels-test ${PROJECT_NAME})
+#catkin_add_gtest(semantic_labels_nodelet-test test/semantic_labels_nodelet.cpp)
+#target_link_libraries(semantic_labels_nodelet-test ${PROJECT_NAME})
 cs_install()
 
 cs_export()

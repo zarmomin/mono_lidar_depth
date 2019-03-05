@@ -18,6 +18,9 @@ src/utilities.cpp
 src/visualization.cpp)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 
+catkin_add_gtest(${PROJECT_NAME}-test test/test_feature_tracking.cpp)
+target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
+
 cs_install()
 
 cs_export()

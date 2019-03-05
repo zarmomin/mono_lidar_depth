@@ -26,6 +26,9 @@ add_library(tracklet_depth_node
         src/tracklet_depth_node/tracklet_depth_nodelet.cpp)
 target_link_libraries(tracklet_depth_node ${PROJECT_NAME})
 
+add_executable(${PROJECT_NAME}-test test/test_tracklet_depth_ros_tool.cpp)
+target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME} gtest_main)
+
 cs_install()
 
 cs_export()

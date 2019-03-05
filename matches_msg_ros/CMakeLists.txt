@@ -6,6 +6,9 @@ find_package(catkin_simple REQUIRED)
 
 catkin_simple(ALL_DEPS_REQUIRED)
 
+add_executable(${PROJECT_NAME}-test test/test_matches_msg_ros.cpp)
+target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME} gtest_main)
+
 cs_install()
 
 cs_export()

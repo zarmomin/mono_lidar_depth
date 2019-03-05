@@ -42,12 +42,12 @@
 #include <vector>
 
 // test classes
-#include "HelperLidarRowSegmentation.h"
-#include "HistogramPointDepth.h"
-#include "NeighborFinderPixel.h"
-#include "PointcloudData.h"
+#include "monolidar_fusion/HelperLidarRowSegmentation.h"
+#include "monolidar_fusion/HistogramPointDepth.h"
+#include "monolidar_fusion/NeighborFinderPixel.h"
+#include "monolidar_fusion/PointcloudData.h"
 
-#include "camera_pinhole.h"
+#include "monolidar_fusion/camera_pinhole.h"
 
 
 // A google test function (uncomment the next function, add code and

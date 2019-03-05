@@ -10,6 +10,9 @@ catkin_simple(ALL_DEPS_REQUIRED)
 #include/matches_msg_types/tracklet.hpp
 #include/matches_msg_types/tracklets.hpp)
 
+add_executable(${PROJECT_NAME}-test test/matches_msg_types.cpp)
+target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME} gtest_main)
+
 cs_install()
 
 cs_export()
