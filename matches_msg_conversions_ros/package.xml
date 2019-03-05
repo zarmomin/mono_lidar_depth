@@ -10,7 +10,7 @@
   <url type="repository">http://github.com/johannes-graeter/limo</url>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>mrt_cmake_modules</build_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
   <test_depend>gtest</test_depend>
@@ -39,12 +39,11 @@
     Example:
     <depend>mrt_opencv</depend>
   -->
-  
+
   <!--<test_depend>opencv</test_depend>-->
-  <depend>mrt_opencv</depend>
-   <depend>matches_msg_ros</depend>
-   <depend>matches_msg_depth_ros</depend>
-   <depend>matches_msg_types</depend>
+  <depend>matches_msg_ros</depend>
+  <depend>matches_msg_depth_ros</depend>
+  <depend>matches_msg_types</depend>
 
   <export>
     <!-- Other tools can request additional information be placed here -->

@@ -5,8 +5,8 @@
  *      Author: wilczynski
  */
 
-#include "PlaneEstimationLeastSquares.h"
-#include "ErrorPlane.h"
+#include "monolidar_fusion/PlaneEstimationLeastSquares.h"
+#include "monolidar_fusion/ErrorPlane.h"
 
 namespace Mono_Lidar {
 PlaneEstimationLeastSquares::PlaneEstimationLeastSquares() {

@@ -8,7 +8,7 @@
  *  and others
  */
 
-#include "convert_opencv3.hpp"
+#include "matches_msg_conversions_ros/convert_opencv3.hpp"
 
 namespace matches_msg_conversions_ros {
 

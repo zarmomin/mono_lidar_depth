@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include <GeometryHelper.h>
+#include "monolidar_fusion/GeometryHelper.h"
 
 namespace Mono_Lidar {
 

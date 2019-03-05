@@ -18,8 +18,8 @@
 
 #include <cv.hpp>
 
-#include "Logger.h"
-#include "RansacPlane.h"
+#include "monolidar_fusion/Logger.h"
+#include "monolidar_fusion/RansacPlane.h"
 
 namespace Mono_Lidar {
 RansacPlane::RansacPlane(const std::shared_ptr<Mono_Lidar::DepthEstimatorParameters>& parameters)

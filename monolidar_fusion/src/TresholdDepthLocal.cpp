@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include <TresholdDepthLocal.h>
+#include "monolidar_fusion/TresholdDepthLocal.h"
 #include <string>
 
 namespace Mono_Lidar {

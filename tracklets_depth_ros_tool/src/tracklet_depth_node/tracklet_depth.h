@@ -12,6 +12,7 @@
 #include <ros/ros.h>
 
 #include <monolidar_fusion/DepthEstimator.h>
+#include <monolidar_fusion/DepthEstimatorParameters.h>
 #include <monolidar_fusion/camera_pinhole.h>
 
 #include <pcl/point_types.h>
@@ -85,7 +86,7 @@ private:
     std::pair<int, int> ExractNewTrackletFrames(const matches_msg_ros::MatchesMsgConstPtr& tracklets_in,
                                                 std::vector<std::shared_ptr<TempTrackletFrame>>& newFrames);
 
-    /*
+    /*monolidar_fusion
      * Estimates the depth of a list of 2d features
      *
      * @param cloud_in Current pointcloud

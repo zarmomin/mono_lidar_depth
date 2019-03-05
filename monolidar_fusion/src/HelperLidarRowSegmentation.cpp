@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include "HelperLidarRowSegmentation.h"
+#include "monolidar_fusion/HelperLidarRowSegmentation.h"
 #include <iostream>
 #include <limits>
 

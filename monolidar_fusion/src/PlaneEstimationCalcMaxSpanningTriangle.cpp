@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include "PlaneEstimationCalcMaxSpanningTriangle.h"
+#include "monolidar_fusion/PlaneEstimationCalcMaxSpanningTriangle.h"
 
 namespace Mono_Lidar {
 PlaneEstimationCalcMaxSpanningTriangle::PlaneEstimationCalcMaxSpanningTriangle(const bool publishPoints)

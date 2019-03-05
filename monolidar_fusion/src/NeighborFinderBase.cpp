@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include "NeighborFinderBase.h"
+#include "monolidar_fusion/NeighborFinderBase.h"
 
 namespace Mono_Lidar {
 void NeighborFinderBase::Initialize(std::shared_ptr<DepthEstimatorParameters>& parameters) {

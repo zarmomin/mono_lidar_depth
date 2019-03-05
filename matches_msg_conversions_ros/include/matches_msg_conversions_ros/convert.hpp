@@ -25,7 +25,12 @@ using OutlierFlags = std::vector<bool>;
 using Errors = std::vector<double>;
 
 ///@brief Define custom assert
-void Assert(bool condition, std::string s);
+inline void Assert(bool condition, std::string s){
+  if (!condition)
+  {
+    throw std::runtime_error("in matches_msg_conversion_ros: " + s);
+  }
+}
 
 ///@brief add outlier flags to existing message
 template <typename T, typename TOut>

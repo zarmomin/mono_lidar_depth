@@ -5,8 +5,8 @@
  *      Author: wilczynski
  */
 
-#include "RoadDepthEstimatorLeastSquares.h"
-#include "LinePlaneIntersectionNormal.h"
+#include "monolidar_fusion/RoadDepthEstimatorLeastSquares.h"
+#include "monolidar_fusion/LinePlaneIntersectionNormal.h"
 
 namespace Mono_Lidar {
 

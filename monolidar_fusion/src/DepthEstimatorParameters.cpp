@@ -9,7 +9,7 @@ n li * DepthEstirmatorParameters.cpp
 #include <opencv/cxcore.h>
 #include <opencv2/core/core.hpp>
 
-#include "DepthEstimatorParameters.h"
+#include "monolidar_fusion/DepthEstimatorParameters.h"
 
 namespace Mono_Lidar {
 

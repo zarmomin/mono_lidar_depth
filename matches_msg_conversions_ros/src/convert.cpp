@@ -8,13 +8,8 @@
  *  and others
  */
 
-#include "convert.hpp"
+#include "matches_msg_conversions_ros/convert.hpp"
 
 namespace matches_msg_conversions_ros {
 
-void Assert(bool condition, std::string s) {
-    if (!condition) {
-        throw std::runtime_error("in matches_msg_conversions_ros: " + s);
-    }
-}
 } // end of ns

@@ -5,8 +5,8 @@
  *      Author: wilczynski
  */
 
-#include "RoadDepthEstimatorMaxSpanningTriangle.h"
-#include "LinePlaneIntersectionNormal.h"
+#include "monolidar_fusion/RoadDepthEstimatorMaxSpanningTriangle.h"
+#include "monolidar_fusion/LinePlaneIntersectionNormal.h"
 
 namespace Mono_Lidar {
 

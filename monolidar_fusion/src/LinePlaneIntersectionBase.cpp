@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include "LinePlaneIntersectionBase.h"
+#include "monolidar_fusion/LinePlaneIntersectionBase.h"
 
 namespace Mono_Lidar {
 

@@ -7,8 +7,8 @@
 
 #include <math.h>
 
-#include "DepthCalcHistPoint.h"
-#include "HistogramPointDepth.h"
+#include "monolidar_fusion/DepthCalcHistPoint.h"
+#include "monolidar_fusion/HistogramPointDepth.h"
 
 namespace Mono_Lidar {
 

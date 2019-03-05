@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include "RoadDepthEstimatorBase.h"
+#include "monolidar_fusion/RoadDepthEstimatorBase.h"
 
 namespace Mono_Lidar {
 RoadDepthEstimatorBase::RoadDepthEstimatorBase() : _tresholdDepthGlobal(NULL), _tresholdDepthLocal(NULL) {

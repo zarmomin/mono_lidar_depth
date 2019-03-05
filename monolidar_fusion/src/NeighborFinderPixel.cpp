@@ -5,8 +5,8 @@
  *      Author: wilczynski
  */
 
-#include "NeighborFinderPixel.h"
-#include "Logger.h"
+#include "monolidar_fusion/NeighborFinderPixel.h"
+#include "monolidar_fusion/Logger.h"
 
 namespace Mono_Lidar {
 

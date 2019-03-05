@@ -5,8 +5,8 @@
  *      Author: wilczynski
  */
 
-#include "RoadDepthEstimatorMEstimator.h"
-#include "LinePlaneIntersectionNormal.h"
+#include "monolidar_fusion/RoadDepthEstimatorMEstimator.h"
+#include "monolidar_fusion/LinePlaneIntersectionNormal.h"
 
 namespace Mono_Lidar {
 RoadDepthEstimatorMEstimator::RoadDepthEstimatorMEstimator() {

@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include "LinePlaneIntersectionNormal.h"
+#include "monolidar_fusion/LinePlaneIntersectionNormal.h"
 
 namespace Mono_Lidar {
 bool LinePlaneIntersectionNormal::GetIntersection(const Eigen::Hyperplane<double, 3>& plane,

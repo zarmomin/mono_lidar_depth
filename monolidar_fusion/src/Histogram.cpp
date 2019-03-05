@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include "Histogram.h"
+#include "monolidar_fusion/Histogram.h"
 #include <iostream>
 #include <stdexcept>
 #include <cmath>

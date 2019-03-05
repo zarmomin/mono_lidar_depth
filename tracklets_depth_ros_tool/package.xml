@@ -9,7 +9,7 @@
   <url type="repository">https://gitlab.mrt.uni-karlsruhe.de/wilczynski/tracklets_depth_ros_tool.git</url>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>mrt_cmake_modules</build_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
   <test_depend>gtest</test_depend>
@@ -18,11 +18,10 @@
   <build_depend>roscpp</build_depend>
   <depend>roslib</depend>
   <depend>nodelet</depend>
-  <depend>yaml-cpp</depend>
-
+  <depend>eigen_catkin</depend>
   <depend>feature_tracking_core</depend>
-  <depend>mrt_pcl</depend>
-  <depend>eigen</depend>
+  <depend>pcl_catkin</depend>
+
 
   <depend>tf_conversions</depend>
   <depend>monolidar_fusion</depend>

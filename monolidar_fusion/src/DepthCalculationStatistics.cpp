@@ -5,7 +5,7 @@
  *      Author: wilczynski
  */
 
-#include "DepthCalculationStatistics.h"
+#include "monolidar_fusion/DepthCalculationStatistics.h"
 
 namespace Mono_Lidar {
 
