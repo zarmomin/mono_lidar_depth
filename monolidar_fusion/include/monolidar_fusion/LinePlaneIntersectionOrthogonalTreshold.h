@@ -20,6 +20,13 @@ public:
                          Eigen::Vector3d& intersectionPoint,
                          double& intersectionDistance) override;
 
+    bool GetIntersectionDistance(const Eigen::Vector3d& p1,
+                               const Eigen::Vector3d& p2,
+                               const Eigen::Vector3d& p3,
+                               const Eigen::Vector3d& rayOrigin,
+                               const Eigen::Vector3d& rayDirection,
+                               double& intersectionDistance) override;
+
 private:
     bool CheckPlaneViewRayOrthogonal(const Eigen::Vector3d& planeNormalVec,
                                      const Eigen::Vector3d& viewingRay,

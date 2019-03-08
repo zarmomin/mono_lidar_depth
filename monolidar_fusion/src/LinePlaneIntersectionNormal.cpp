@@ -18,15 +18,27 @@ bool LinePlaneIntersectionNormal::GetIntersection(const Eigen::Hyperplane<double
 
     // calculate intersection between the raycast and the plane
 
-    auto intersectionMatrix = line.intersectionPoint(plane);
-
-    // write output parameters
-    for (int i = 0; i < 3; i++)
-        intersectionPoint(i) = intersectionMatrix(i, 0);
+    intersectionPoint = line.intersectionPoint(plane);
 
     // intersectionDistance = line.intersection(plane);
-    intersectionDistance = intersectionMatrix(2, 0);
+    intersectionDistance = (n0 - intersectionPoint).norm();
 
     return true;
 }
+
+bool LinePlaneIntersectionNormal::GetIntersectionDistance(const Eigen::Vector3d& p1,
+                                                                      const Eigen::Vector3d& p2,
+                                                                      const Eigen::Vector3d& p3,
+                                                                      const Eigen::Vector3d& rayOrigin,
+                                                                      const Eigen::Vector3d& rayDirection,
+                                                                      double& intersectionDistance){
+    Eigen::Vector3d v0(p3-p1);
+    Eigen::Vector3d v1(p2-p1);
+    Eigen::Vector3d planeNormal = v0.cross(v1);
+
+    Eigen::Vector3d centroid = (p1 + p2 + p3) / 3.0;
+    intersectionDistance = (rayOrigin - centroid).norm();
+    return true;
+}
+
 }

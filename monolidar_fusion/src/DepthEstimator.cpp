@@ -921,8 +921,8 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
                                                           depth))
             return std::pair<DepthResultType, double>(DepthResultType::PlaneViewrayNotOrthogonal, -1);
     } else {
-        if (!_linePlaneIntersection->GetIntersectionPoint(
-                corner1, corner2, corner3, viewingRaySupportPoint, viewingRayDirection, intersectionPoint, depth))
+        if (!_linePlaneIntersection->GetIntersectionDistance(
+                corner1, corner2, corner3, viewingRaySupportPoint, viewingRayDirection, depth))
             return std::pair<DepthResultType, double>(DepthResultType::PlaneViewrayNotOrthogonal, -1);
     }
 

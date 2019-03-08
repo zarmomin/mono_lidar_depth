@@ -71,7 +71,7 @@ histogram_segmentation_min_pointcount: 3
 # 3.) the given point from 3.) describes the seed point of the first lidar row
 # 4.) get the neighbor row (seed point) from the first selected row
 # 5.) select points from both lidar rows using region growing
-do_use_depth_segmentation: 1 # takes some time, deactivate for faster runtime
+do_use_depth_segmentation: 0 # takes some time, deactivate for faster runtime
 # the treshold from which the gradient value will be added to the parameters
 # value_final = value + (cur_depth - depth_segmentation_max_treshold_gradient) * value_gradient
 depth_segmentation_max_treshold_gradient: 10  # in meters
@@ -105,7 +105,7 @@ treshold_depth_min: 0
 # _____ Calculated depth local Treshold _____ 
 
 # if 1, local treshold which checks if the calculated depth is in bounds. The bounds are dependant on the depth of the 3d lidar point selection.
-treshold_depth_local_enabled: 1
+treshold_depth_local_enabled: 0
 # 0 -> Sets outliner points to -1; 1 -> Sets outliner points to the threshold 
 treshold_depth_local_mode: 0 
 # -> mode how the outer tolerance border is calculated: 0 -> absolute; 1 -> relative
@@ -125,7 +125,7 @@ pca_treshold_2_1_rel_min: 1.5 # the min value how much greater the second EV mus
 # _____ Ransac Plane Estimation _____
 
 # Estimation for points on the ground plane
-do_use_ransac_plane: 1
+do_use_ransac_plane: 0
 ransac_plane_distance_treshold: 0.3
 # ransac max itearation count
 ransac_plane_max_iterations: 10000
@@ -178,4 +178,4 @@ viewray_plane_orthoganality_treshold: 0.03
 
 do_debug_singleFeatures: 0
 do_publish_points: 0
-do_depth_calc_statistics: 1
+do_depth_calc_statistics: 0

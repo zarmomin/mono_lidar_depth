@@ -29,16 +29,29 @@ bool LinePlaneIntersectionOrthogonalTreshold::GetIntersection(const Eigen::Hyper
         return false;
 
     // calculate intersection between the raycast and the plane
-    auto intersectionMatrix = line.intersectionPoint(plane);
+    intersectionPoint = line.intersectionPoint(plane);
 
-    // write output parameters
-    for (int i = 0; i < 3; i++)
-        intersectionPoint(i) = intersectionMatrix(i, 0);
-
-    // intersectionDistance = line.intersection(plane);
-    intersectionDistance = intersectionMatrix(2, 0);
+    intersectionDistance = (n0 - intersectionPoint).norm();
 
     return true;
+}
+
+bool LinePlaneIntersectionOrthogonalTreshold::GetIntersectionDistance(const Eigen::Vector3d& p1,
+                                                                      const Eigen::Vector3d& p2,
+                                                                      const Eigen::Vector3d& p3,
+                                                                      const Eigen::Vector3d& rayOrigin,
+                                                                      const Eigen::Vector3d& rayDirection,
+                                                                      double& intersectionDistance){
+  Eigen::Vector3d v0(p3-p1);
+  Eigen::Vector3d v1(p2-p1);
+  Eigen::Vector3d planeNormal = v0.cross(v1).normalized();
+
+  if (!CheckPlaneViewRayOrthogonal(planeNormal, rayDirection, _treshold))
+    return false;
+
+  Eigen::Vector3d centroid = (p1 + p2 + p3) / 3.0;
+  intersectionDistance = (rayOrigin - centroid).norm();
+  return true;
 }
 
 bool LinePlaneIntersectionOrthogonalTreshold::CheckPlaneViewRayOrthogonal(const Eigen::Vector3d& planeNormalVec,
