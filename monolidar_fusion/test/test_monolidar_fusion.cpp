@@ -83,6 +83,7 @@ TEST(Interface, complete_run)
     std::srand(42);
     std::shared_ptr<CameraPinhole> cam;
     cam = std::make_shared<CameraPinhole>(img_width, img_height, cam_f, cam_p_u, cam_p_v);
+    // upright CS to left-down camera CS
     Eigen::Affine3d l2c;
     l2c.matrix() << 0, -1, 0, 0,
                     0, 0, -1, 0,
@@ -90,7 +91,7 @@ TEST(Interface, complete_run)
                     0, 0, 0, 1;
     Eigen::Vector3d tmp = l2c * Eigen::Vector3d(5,1,2);
     Mono_Lidar::DepthEstimator depthEstimator;
-    depthEstimator.InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", true);
+    depthEstimator.InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
     depthEstimator.Initialize(cam, l2c);
 
     // generate camera points
@@ -118,7 +119,7 @@ TEST(Interface, complete_run)
     double points_delta_z = 0.05;
     double intensity = 0;
 
-    Eigen::VectorXd points_3d_cam;
+    Eigen::VectorXd point_depths;
 
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
     for (double y = points_min_y; y < points_max_y; y += points_delta_y) {
@@ -134,10 +135,11 @@ TEST(Interface, complete_run)
     }
     pcl::PointCloud<pcl::PointXYZI>::ConstPtr pointcloudpointer(new pcl::PointCloud<pcl::PointXYZI>(pointcloud));
     Mono_Lidar::GroundPlane::Ptr groundplane = nullptr;
-    depthEstimator.CalculateDepth(pointcloudpointer, points_2d_orig, points_3d_cam, groundplane);
-    std::cout << std::endl << points_3d_cam.minCoeff() << std::endl;
-    std::cout << std::endl << points_3d_cam.maxCoeff() << std::endl;
-    std::cout << std::endl << (points_3d_cam.array() > 0).count() << std::endl;
+    depthEstimator.CalculateDepth(pointcloudpointer, points_2d_orig, point_depths, groundplane);
+
+    // all points were successfully given a depth estimate
+    ASSERT_TRUE(point_depths.minCoeff() >= points_min_x);
+    ASSERT_TRUE(point_depths.maxCoeff() >= points_max_x);
 }
 
 TEST(NeigborFinder, findByPixel) {

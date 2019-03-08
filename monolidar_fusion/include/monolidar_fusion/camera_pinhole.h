@@ -28,7 +28,7 @@ public: // Public methods.
         int width, int height, double focal_length, double principal_point_x, double principal_point_y)
             : width_(width), height_(height), focal_length_(focal_length), principal_point_x_(principal_point_x),
               principal_point_y_(principal_point_y) {
-        ;
+        makeIntrinsics();
     }
 
     // Default destructor.
@@ -51,7 +51,6 @@ public: // Public methods.
     void getViewingRays(const Eigen::Matrix<double, 2, N>& image_points,
                         Eigen::Matrix<double, 3, N>& support_points,
                         Eigen::Matrix<double, 3, N>& directions) const {
-        Eigen::Matrix3d intrinsics = makeIntrinsics();
 
         // Copy for circumventing the copy constructor
         // (would be different for static and dynamic sized matrices).
@@ -60,29 +59,15 @@ public: // Public methods.
         //        // Dynamic access in case that N==Eigen::Dynamic.
         //        image_points_hom.block(0, 0, 2, N) = image_points;
         // Get directions.
-        directions = intrinsics.inverse() * image_points.colwise().homogeneous();
+        directions = intrinsics_inverted * image_points.colwise().homogeneous();
         directions = directions.colwise().normalized();
         // We only support SVP models.
         support_points.setZero(3, directions.cols());
     }
 
-    // void getViewingRays(const Eigen::Matrix<double, 2, Eigen::Dynamic>& image_points,
-    //                     Eigen::Matrix<double, 3, Eigen::Dynamic>& support_points,
-    //                     Eigen::Matrix<double, 3, Eigen::Dynamic>& directions) const {
-    //     Eigen::Matrix3d intrinsics = makeIntrinsics();
-
-    //     Eigen::Matrix<double, 3, Eigen::Dynamic> image_points_hom = support_points;
-    //     image_points_hom.setOnes();
-    //     image_points_hom.block(0, 0, 2, image_points.cols()) = image_points;
-    //     directions = intrinsics.inverse() * image_points_hom;
-    //     directions = directions.colwise().normalized();
-
-    //     support_points.setZero();
-    // }
     template <int N>
     Eigen::Array<bool, 1, N> getImagePoints(const Eigen::Matrix<double, 3, N>& points3d,
                                             Eigen::Matrix<double, 2, N>& image_points) const {
-        Eigen::Matrix3d intrinsics = makeIntrinsics();
         Eigen::Matrix<double, 3, N> image_points_3d = intrinsics * points3d;
         // https: // eigen.tuxfamily.org/dox/group__Geometry__Module.html#title42
         image_points = image_points_3d.colwise().hnormalized();
@@ -95,12 +80,12 @@ public: // Public methods.
     }
 
 private:
-    Eigen::Matrix3d makeIntrinsics() const {
-        Eigen::Matrix3d intrinsics = Eigen::Matrix3d::Identity();
+    void makeIntrinsics() {
+        intrinsics = Eigen::Matrix3d::Identity();
         intrinsics(0, 0) = intrinsics(1, 1) = focal_length_;
         intrinsics(0, 2) = principal_point_x_;
         intrinsics(1, 2) = principal_point_y_;
-        return intrinsics;
+        intrinsics_inverted = intrinsics.inverse();
     }
 
 private:
@@ -109,4 +94,6 @@ private:
     double focal_length_;
     double principal_point_x_;
     double principal_point_y_;
+    Eigen::Matrix3d intrinsics;
+    Eigen::Matrix3d intrinsics_inverted;
 };

@@ -166,12 +166,8 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud, GroundPlane::Pt
     _points_neighbors.clear();
     _points_groundplane.clear();
 
-    // Extract required part of the original pointcloud
-    Cloud::Ptr cloud_cut = {boost::make_shared<Cloud>()};
-    CutPointCloud(cloud, cloud_cut);
-
     // Change coordinate frame
-    Transform_Cloud_LidarToCamera(cloud_cut, _transform_lidar_to_cam);
+    Transform_Cloud_LidarToCamera(cloud, _transform_lidar_to_cam);
 
     if (_parameters->neighbor_search_mode == 0) {
         // use next pixel neighbor search
@@ -197,7 +193,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud, GroundPlane::Pt
 
         // only segment if this wasn't done yet
         if (!groundPlane->isSegmented()) {
-            groundPlane->CalculateInliersPlane(cloud_cut);
+            groundPlane->CalculateInliersPlane(cloud);
         }
 
         // set initial plane for m_estimator (weighted least squares)
@@ -302,6 +298,7 @@ void DepthEstimator::CutPointCloud(const Cloud::ConstPtr& cloud_in, const Cloud:
     cloud_out->header.stamp = cloud_filtered->header.stamp;
 
     for (const auto& pt : cloud_filtered->points) {
+        // nico todo: this implicitly assumes a camera FOV of 90deg & a camera parallel to the laser
         if (fabs(pt.x) > fabs(pt.y)) {
             pcl::PointXYZI newPoint;
             newPoint.x = pt.x;
@@ -1007,15 +1004,8 @@ void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr& cloud_
     _points._points_cs_image.resize(2, pointCount);
 
     _points._pointsInImgRange = _camera->getImagePoints(_points._points_cs_camera, _points._points_cs_image);
-    int pointCountImgVisible = 0;
+    int pointCountImgVisible = (_points._pointsInImgRange == true).count();
 
-    for (int i = 0; i < _points._points_cs_image.cols(); i++) {
-        if (_points._pointsInImgRange[i]) {
-            if ((_points._points_cs_image(0, i) > 0) && (_points._points_cs_image(0, i) < _imgWitdh) &&
-                (_points._points_cs_image(1, i) > 0) && (_points._points_cs_image(1, i) < _imgHeight))
-                pointCountImgVisible++;
-        }
-    }
     // create data which just stores visible points (in image cs)
     _points._points_cs_image_visible.resize(2, pointCountImgVisible);
 
@@ -1024,13 +1014,10 @@ void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr& cloud_
 
     for (int i = 0; i < pointCount; i++) {
         if (_points._pointsInImgRange[i]) {
-            if ((_points._points_cs_image(0, i) > 0) && (_points._points_cs_image(0, i) < _imgWitdh) &&
-                (_points._points_cs_image(1, i) > 0) && (_points._points_cs_image(1, i) < _imgHeight)) {
-                _points._points_cs_image_visible(0, visibleIndex) = _points._points_cs_image(0, i);
-                _points._points_cs_image_visible(1, visibleIndex) = _points._points_cs_image(1, i);
-                _points._pointIndex.push_back(i);
-                visibleIndex++;
-            }
+            _points._points_cs_image_visible(0, visibleIndex) = _points._points_cs_image(0, i);
+            _points._points_cs_image_visible(1, visibleIndex) = _points._points_cs_image(1, i);
+            _points._pointIndex.push_back(i);
+            visibleIndex++;
         }
     }
 
