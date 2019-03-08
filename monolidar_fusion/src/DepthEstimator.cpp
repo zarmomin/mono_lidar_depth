@@ -933,29 +933,6 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
         else if (result == eTresholdResult::GreaterMax)
             return std::pair<DepthResultType, double>(DepthResultType::TresholdDepthGlobalGreaterMax, -1);
     }
-
-    if (this->_tresholdDepthLocal != NULL) {
-        auto result = this->_tresholdDepthLocal->CheckInBounds(pointsSegmented, depth);
-        if (result == eTresholdResult::SmallerMin)
-            return std::pair<DepthResultType, double>(DepthResultType::TresholdDepthLocalSmallerMin, -1);
-        else if (result == eTresholdResult::GreaterMax)
-            return std::pair<DepthResultType, double>(DepthResultType::TresholdDepthLocalGreaterMax, -1);
-    }
-
-    if (depth < 0) {
-        if (_parameters->do_use_cut_behind_camera) {
-            return std::pair<DepthResultType, double>(DepthResultType::CornerBehindCamera, -1);
-        }
-    }
-
-    //    #pragma omp critical
-    //    {
-    //    if (_parameters->do_publish_points)
-    //    {
-    //        _points_interpolated.push_back(intersectionPoint);
-    //    }
-    //    }
-
     return std::pair<DepthResultType, double>(DepthResultType::Success, depth);
 }
 

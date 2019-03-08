@@ -41,7 +41,7 @@ public:
     TresholdDepthLocal(const eTresholdDepthMode& mode,
                        const eTresholdToleranceType toleranceType,
                        const double toleranceValue);
-
+    // nico todo: don't ever let this function be called, it is HORRIBLY SLOW
     eTresholdResult CheckInBounds(const std::vector<Eigen::Vector3d>& pointCloud, double& depth);
 
 private:
