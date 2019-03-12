@@ -26,9 +26,15 @@ public: // Public methods.
     // Default constructor.
     explicit CameraPinhole(
         int width, int height, double focal_length, double principal_point_x, double principal_point_y)
-            : width_(width), height_(height), focal_length_(focal_length), principal_point_x_(principal_point_x),
-              principal_point_y_(principal_point_y) {
-        makeIntrinsics();
+            : width_(width), height_(height) {
+        makeIntrinsics(focal_length, principal_point_x, principal_point_y);
+    }
+
+    // Default constructor.
+    explicit CameraPinhole(int width, int height, const Eigen::Matrix3d& camera_matrix)
+    : width_(width), height_(height) {
+        intrinsics = camera_matrix;
+        intrinsics_inverted = intrinsics.inverse();
     }
 
     // Default destructor.
@@ -80,20 +86,17 @@ public: // Public methods.
     }
 
 private:
-    void makeIntrinsics() {
+    void makeIntrinsics(double focal_length, double principal_point_x, double principal_point_y) {
         intrinsics = Eigen::Matrix3d::Identity();
-        intrinsics(0, 0) = intrinsics(1, 1) = focal_length_;
-        intrinsics(0, 2) = principal_point_x_;
-        intrinsics(1, 2) = principal_point_y_;
+        intrinsics(0, 0) = intrinsics(1, 1) = focal_length;
+        intrinsics(0, 2) = principal_point_x;
+        intrinsics(1, 2) = principal_point_y;
         intrinsics_inverted = intrinsics.inverse();
     }
 
 private:
     int width_;
     int height_;
-    double focal_length_;
-    double principal_point_x_;
-    double principal_point_y_;
     Eigen::Matrix3d intrinsics;
     Eigen::Matrix3d intrinsics_inverted;
 };

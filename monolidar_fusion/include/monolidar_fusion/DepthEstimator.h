@@ -9,27 +9,27 @@
 
 #include <memory>
 #include <Eigen/Eigen> // IWYU pragma: keep
-#include <opencv/cxcore.h>
+//#include <opencv/cxcore.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/surface/gp3.h>
 
-#include "DepthCalcStatsSinglePoint.h"
-#include "DepthCalculationStatistics.h"
-#include "DepthEstimatorParameters.h"
-#include "HelperLidarRowSegmentation.h"
-#include "LinePlaneIntersectionBase.h"
-#include "NeighborFinderBase.h"
-#include "PlaneEstimationCalcMaxSpanningTriangle.h"
-#include "PlaneEstimationCheckPlanar.h"
-#include "PointcloudData.h"
-#include "RansacPlane.h"
-#include "RoadDepthEstimatorBase.h"
-#include "TresholdDepthGlobal.h"
-#include "TresholdDepthLocal.h"
-#include "camera_pinhole.h"
-#include "eDepthResultType.h"
+#include "monolidar_fusion/DepthCalcStatsSinglePoint.h"
+#include "monolidar_fusion/DepthCalculationStatistics.h"
+#include "monolidar_fusion/DepthEstimatorParameters.h"
+#include "monolidar_fusion/HelperLidarRowSegmentation.h"
+#include "monolidar_fusion/LinePlaneIntersectionBase.h"
+#include "monolidar_fusion/NeighborFinderBase.h"
+#include "monolidar_fusion/PlaneEstimationCalcMaxSpanningTriangle.h"
+#include "monolidar_fusion/PlaneEstimationCheckPlanar.h"
+#include "monolidar_fusion/PointcloudData.h"
+#include "monolidar_fusion/RansacPlane.h"
+#include "monolidar_fusion/RoadDepthEstimatorBase.h"
+#include "monolidar_fusion/TresholdDepthGlobal.h"
+#include "monolidar_fusion/TresholdDepthLocal.h"
+#include "monolidar_fusion/camera_pinhole.h"
+#include "monolidar_fusion/eDepthResultType.h"
 
 namespace Mono_Lidar {
 
@@ -65,6 +65,9 @@ public:
      * @param transform_lidar_to_cam Pose of the camera in lidar coordinates
      */
     bool Initialize(const std::shared_ptr<CameraPinhole>& camera, const Eigen::Affine3d& transform_lidar_to_cam);
+
+
+    bool Initialize(const Eigen::Vector3d& BrBC, const Eigen::Quaterniond& qBC, const Eigen::Matrix3d& K);
 
     /*
      * Initializes the parameters from a config file. Must be called before class usuage.
@@ -170,6 +173,17 @@ public:
                         Eigen::VectorXd& points_depths,
                         GroundPlane::Ptr& ransacPlane);
 
+  /*
+  * Calculates the depth of a set of given points
+  * The pointcloud and the image must be synchronized in time
+  * @param pointCloud [in] 3D pointcloud. Only points inside the camera view cone will be considered
+  * @param points_image_cs [in] Points in image coordinates for which the depth will be calculated. Stored in row
+  * order
+  * @param points_depths [out] Depths of the given points in meters
+  */
+  void CalculateDepth(const Cloud::ConstPtr& pointCloud,
+                      const Eigen::Matrix2Xd& points_image_cs,
+                      Eigen::VectorXd& points_depths);
     /*
     * Calculates the depth of a set of given points
     * The pointcloud and the image must be synchronized in time
@@ -216,8 +230,10 @@ public:
                                                       std::shared_ptr<DepthCalcStatsSinglePoint> calcStats = NULL);
 
     void LogDepthCalcStats(const DepthResultType depthResult);
-
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
+    bool InitializeParameters();
+
     /*
      * Creates a pointcloud with a list of 3D points
      *

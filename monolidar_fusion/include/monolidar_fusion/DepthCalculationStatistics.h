@@ -11,14 +11,12 @@
 #include <memory>
 #include <vector>
 
-#include "DepthCalcStatsSinglePoint.h"
+#include "monolidar_fusion/DepthCalcStatsSinglePoint.h"
 
 namespace Mono_Lidar {
 class DepthCalculationStatistics {
 public:
     DepthCalculationStatistics();
-    ~DepthCalculationStatistics() {
-    }
 
     inline void SetPointCount(int value) {
         _pointCount = value;
