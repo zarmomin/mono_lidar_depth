@@ -6,12 +6,46 @@ project(monolidar_fusion)
 ## find packages ##
 ###################
 set(CMAKE_CXX_STANDARD 14)
+add_definitions( -march=native )
 find_package(catkin_simple REQUIRED)
 find_package(OpenCV REQUIRED)
+
+FIND_PACKAGE(PkgConfig REQUIRED)
+find_package(yaml_cpp_catkin QUIET)
+if(${yaml_cpp_catkin_FOUND})
+  message(STATUS "Found yaml_cpp_catkin, using instead of system library.")
+  set(YamlCpp_LIBRARIES ${yaml_cpp_catkin_LIBRARIES})
+  set(YamlCpp_INCLUDE_DIRS ${yaml_cpp_catkin_INCLUDE_DIRS})
+  catkin_package(
+    INCLUDE_DIRS include
+    LIBRARIES ${PROJECT_NAME}
+    CATKIN_DEPENDS
+      eigen_catkin
+      pcl_catkin
+      ceres_catkin
+      yaml_cpp_catkin
+    DEPENDS OpenCV
+  )
+else()
+  message(STATUS "No yaml_cpp_catkin, using yaml-cpp system library instead.")
+  pkg_check_modules(YamlCpp REQUIRED yaml-cpp>=0.5)
+  catkin_package(
+    INCLUDE_DIRS include
+    LIBRARIES ${PROJECT_NAME}
+    CATKIN_DEPENDS
+      eigen_catkin
+      pcl_catkin
+      ceres_catkin
+    DEPENDS OpenCV YamlCpp
+  )
+endif()
+
 catkin_simple(ALL_DEPS_REQUIRED)
 
 
-add_library(${PROJECT_NAME} src/DepthCalculationStatistics.cpp
+
+add_library(${PROJECT_NAME}
+src/DepthCalculationStatistics.cpp
 src/DepthEstimator.cpp
 src/DepthEstimatorParameters.cpp
 src/GeometryHelper.cpp
@@ -37,11 +71,23 @@ src/RoadDepthEstimatorMaxSpanningTriangle.cpp
 src/RoadDepthEstimatorMEstimator.cpp
 src/TresholdDepthGlobal.cpp
 src/TresholdDepthLocal.cpp)
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 
-add_executable(${PROJECT_NAME}-test test/test_monolidar_fusion.cpp)
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} ${YamlCpp_LIBRARIES})
+
+cs_add_executable(${PROJECT_NAME}-test test/test_monolidar_fusion.cpp)
 target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME} gtest_main)
 
-cs_install()
+#############
+## Install ##
+#############
 
-cs_export()
+install(TARGETS
+  ${PROJECT_NAME}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
