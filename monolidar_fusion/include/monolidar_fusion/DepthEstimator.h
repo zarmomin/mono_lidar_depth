@@ -34,7 +34,8 @@
 namespace Mono_Lidar {
 
 class DepthEstimator {
-
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 public:
     std::map<DepthResultType, std::string> DepthResultTypeMap{
         {Success, "Success"},
@@ -230,7 +231,6 @@ public:
                                                       std::shared_ptr<DepthCalcStatsSinglePoint> calcStats = NULL);
 
     void LogDepthCalcStats(const DepthResultType depthResult);
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
     bool InitializeParameters();
 

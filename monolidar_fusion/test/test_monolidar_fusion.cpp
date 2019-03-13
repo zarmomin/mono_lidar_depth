@@ -142,6 +142,69 @@ TEST(Interface, complete_run)
     ASSERT_TRUE(point_depths.maxCoeff() >= points_max_x);
 }
 
+TEST(Interface, complete_run2)
+{
+    const int img_width = 752;
+    const int img_height = 480;
+    const double cam_p_u = 375;
+    const double cam_p_v = 239;
+    const double cam_f = 395;
+    std::srand(42);
+    Eigen::Quaterniond q(0.5, 0.5, -0.5, 0.5);
+    Eigen::Vector3d r(0,0,0);
+    Eigen::Matrix3d intrinsics = Eigen::Matrix3d::Identity();
+    intrinsics(0, 0) = intrinsics(1, 1) = cam_f;
+    intrinsics(0, 2) = cam_p_u;
+    intrinsics(1, 2) = cam_p_v;
+    std::shared_ptr<Mono_Lidar::DepthEstimator> depthEstimator = std::make_shared<Mono_Lidar::DepthEstimator>();
+    depthEstimator->InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
+    depthEstimator->Initialize(r,q,intrinsics);
+
+    // generate camera points
+    const int point_count = 50;
+
+    Eigen::Matrix2Xd points_2d_orig;
+    points_2d_orig.resize(2, point_count);
+
+    for (int i = 0; i < point_count; i++) {
+        const int u = ( std::rand() % ( img_width + 1 ) );
+        const int v = ( std::rand() % ( img_height + 1 ) );
+        points_2d_orig(0, i) = u;
+        points_2d_orig(1, i) = v;
+    }
+
+    // generate lidar points
+    double points_min_x = 4.99;
+    double points_max_x = 5;
+    double points_delta_x = 1;
+    double points_min_y = -5;
+    double points_max_y = 5;
+    double points_delta_y = 0.04;
+    double points_min_z = -3;
+    double points_max_z = 3;
+    double points_delta_z = 0.05;
+    double intensity = 0;
+
+    Eigen::VectorXd point_depths;
+
+    pcl::PointCloud<pcl::PointXYZI> pointcloud;
+    for (double y = points_min_y; y < points_max_y; y += points_delta_y) {
+        for (double x = points_max_x; x > points_min_x; x -= points_delta_x) {
+            for (double z = points_min_z; z < points_max_z; z+=points_delta_z) {
+                pcl::PointXYZI pt(intensity);
+                pt.x = x;
+                pt.y = y;
+                pt.z = z;
+                pointcloud.push_back(pt);
+            }
+        }
+    }
+    pcl::PointCloud<pcl::PointXYZI>::ConstPtr pointcloudpointer(new pcl::PointCloud<pcl::PointXYZI>(pointcloud));
+    //Mono_Lidar::GroundPlane::Ptr groundplane = nullptr;
+    depthEstimator->CalculateDepth(pointcloudpointer, points_2d_orig, point_depths);
+    // all points were successfully given a depth estimate
+}
+
 TEST(NeigborFinder, findByPixel) {
     const int img_width = 100;
     const int img_height = 100;

@@ -7,6 +7,7 @@ project(monolidar_fusion)
 ###################
 set(CMAKE_CXX_STANDARD 14)
 add_definitions( -march=native )
+add_definitions(-DEIGEN_DONT_ALIGN_STATICALLY)
 find_package(catkin_simple REQUIRED)
 find_package(OpenCV REQUIRED)
 
@@ -17,7 +18,7 @@ if(${yaml_cpp_catkin_FOUND})
   set(YamlCpp_LIBRARIES ${yaml_cpp_catkin_LIBRARIES})
   set(YamlCpp_INCLUDE_DIRS ${yaml_cpp_catkin_INCLUDE_DIRS})
   catkin_package(
-    INCLUDE_DIRS include
+    INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS
       eigen_catkin
