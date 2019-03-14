@@ -33,7 +33,7 @@ public:
                       const std::shared_ptr<DepthCalcStatsSinglePoint>& calcStats = NULL,
                       const float scaleWidth = 1,
                       const float scaleHeight = 1) override;
-
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
     // Constants
     const int POINT_NOT_DEFINED = -1;

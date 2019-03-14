@@ -9,7 +9,7 @@
 
 #include <vector>
 #include <Eigen/Eigen>
-
+#include <Eigen/StdVector>
 #include "eTresholdDepthMode.h"
 #include "eTresholdResult.h"
 

@@ -24,7 +24,7 @@ bool PlaneEstimationCalcMaxSpanningTriangle::CalculatePlaneCorners(const std::ve
                                                                    std::vector<Eigen::Vector3d>& publishPointList) {
     bool result = CalculatePlaneCorners(points, corner1, corner2, corner3);
 
-#pragma omp critical
+//#pragma omp critical
     {
         publishPointList.push_back(corner1);
         publishPointList.push_back(corner2);

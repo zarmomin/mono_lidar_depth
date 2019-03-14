@@ -15,8 +15,7 @@ NeighborFinderPixel::NeighborFinderPixel(const int imgWitdh,
                                          const int pixelSearchWidth,
                                          const int pixelSearchHeight)
         : _imgWitdth(imgWitdh), _imgHeight(imgHeight), _pixelSearchWidth(pixelSearchWidth),
-          _pixelSearchHeight(pixelSearchHeight) {
-    _img_points_lidar.resize(_imgWitdth, _imgHeight);
+          _pixelSearchHeight(pixelSearchHeight), _img_points_lidar(imgWitdh, imgHeight) {
 }
 
 void NeighborFinderPixel::Initialize(std::shared_ptr<DepthEstimatorParameters>& parameters) {

@@ -35,12 +35,13 @@ namespace Mono_Lidar {
 bool DepthEstimator::Initialize(const Eigen::Vector3d& BrBC,
                                 const Eigen::Quaterniond& qBC,
                                 const Eigen::Matrix3d& K) {
-  _imgHeight = 480;
-  _imgWitdh = 720;
   _camera = std::make_shared<CameraPinhole>(_imgWitdh, _imgHeight, K);
+  _transform_lidar_to_cam = Eigen::Affine3d::Identity();
   _transform_lidar_to_cam.translation() = BrBC;
   _transform_lidar_to_cam.linear() = qBC.toRotationMatrix();
-    return InitializeParameters();
+  _transform_cam_to_lidar = _transform_lidar_to_cam.inverse();
+  return true;
+  //return InitializeParameters();
 }
 
 bool DepthEstimator::Initialize(const std::shared_ptr<CameraPinhole>& camera,
@@ -48,12 +49,14 @@ bool DepthEstimator::Initialize(const std::shared_ptr<CameraPinhole>& camera,
   if (!_isInitializedConfig) {
     throw "Call 'InitConfig' before calling 'Initialize'.";
   }
-
   _camera = camera;
-  _camera->getImageSize(_imgWitdh, _imgHeight);
+  //_camera->getImageSize(_imgWitdh, _imgHeight);
+  _transform_lidar_to_cam = Eigen::Affine3d::Identity();
+  _transform_cam_to_lidar = Eigen::Affine3d::Identity();
   _transform_lidar_to_cam = transform_lidar_to_cam;
-  _transform_cam_to_lidar = transform_lidar_to_cam.inverse();
-  return InitializeParameters();
+  _transform_cam_to_lidar = _transform_lidar_to_cam.inverse();
+  //return InitializeParameters();
+  return true;
 }
 
 
@@ -73,7 +76,6 @@ bool DepthEstimator::InitializeParameters()
     } else
         throw "neighbor_search_mode has the invalid value: " +
             std::to_string(_parameters->neighbor_search_mode);
-
     // Initialize treshold depth module
     if (_parameters->treshold_depth_enabled) {
         auto mode = (eTresholdDepthMode)_parameters->treshold_depth_mode;
@@ -81,7 +83,6 @@ bool DepthEstimator::InitializeParameters()
             mode, _parameters->treshold_depth_min, _parameters->treshold_depth_max);
     } else
         this->_tresholdDepthGlobal = NULL;
-
     // Initialize local treshold depth module
     if (_parameters->treshold_depth_local_enabled) {
         auto mode = (eTresholdDepthMode)_parameters->treshold_depth_local_mode;
@@ -91,7 +92,6 @@ bool DepthEstimator::InitializeParameters()
             mode, toleranceType, _parameters->treshold_depth_local_value);
     } else
         this->_tresholdDepthLocal = NULL;
-
     // Initialize line plane intersection module
     if (_parameters->viewray_plane_orthoganality_treshold > 0)
         this->_linePlaneIntersection =
@@ -100,7 +100,6 @@ bool DepthEstimator::InitializeParameters()
     else
         this->_linePlaneIntersection =
             std::make_shared<LinePlaneIntersectionNormal>();
-
     // Initialize Ransac plane for road estimation
     if (_parameters->do_use_ransac_plane) {
         // Initialize Depth Estimator for points which lie on the ground plane/road
@@ -127,12 +126,10 @@ bool DepthEstimator::InitializeParameters()
     } else {
         this->_roadDepthEstimator = NULL;
     }
-
     // Module for further depth segmentation
     if (_parameters->do_use_depth_segmentation) {
         _lidarRowSegmenter = std::make_shared<HelperLidarRowSegmentation>();
     }
-
     // Module for constructing a maximum size plane with 3 points with a given
     // pointcloud
     if (_parameters->do_use_triangle_size_maximation)
@@ -141,7 +138,6 @@ bool DepthEstimator::InitializeParameters()
                 _parameters->do_publish_points);
     else
         _planeCalcMaxSpanning = NULL;
-
     // Plane planarity checker if the plane is constructed by using exactly 3
     // points
     if (_parameters->do_check_triangleplanar_condition) {
@@ -151,7 +147,6 @@ bool DepthEstimator::InitializeParameters()
         this->_checkPlanarTriangle = NULL;
 
     _isInitialized = true;
-
     return true;
 }
 
@@ -162,7 +157,7 @@ bool DepthEstimator::InitConfig(const std::string& filePath,
   _parameters->fromFile(filePath);
 
   if (printparams) _parameters->print();
-
+  InitializeParameters();
   _isInitializedConfig = true;
 
   return true;
@@ -376,7 +371,9 @@ void DepthEstimator::CalculateDepth(const Cloud::ConstPtr& pointCloud,
                                     Eigen::VectorXd& points_depths) {
   GroundPlane::Ptr tmp = nullptr;
   setInputCloud(pointCloud, tmp);
-  CalculateDepth(points_image_cs, points_depths, tmp);
+  Eigen::VectorXi depthTypes(points_image_cs.cols());
+  CalculateDepth(points_image_cs, points_depths, depthTypes,
+                 tmp);
 }
 
 void DepthEstimator::CalculateDepth(const Cloud::ConstPtr& pointCloud,
@@ -410,8 +407,6 @@ void DepthEstimator::CalculateDepth(
     throw "call of 'CalculateDepth' without 'SetInputCloud'";
   }
   int imgPointCount = featurePoints_image_cs.cols();
-  points_depths.resize(imgPointCount);
-  resultType.resize(imgPointCount);
 
   if (_parameters->do_depth_calc_statistics) _depthCalcStats.Clear();
 
@@ -421,8 +416,7 @@ void DepthEstimator::CalculateDepth(
 
     return;
   }
-
-#pragma omp parallel for
+//#pragma omp parallel for
   for (int i = 0; i < imgPointCount; i++) {
     double imgPointX = featurePoints_image_cs(0, i);
     double imgPointY = featurePoints_image_cs(1, i);
@@ -432,11 +426,9 @@ void DepthEstimator::CalculateDepth(
 
     if (_parameters->do_debug_singleFeatures)
       stats = std::make_shared<DepthCalcStatsSinglePoint>();
-
     auto depthPair = this->CalculateDepth(imgPoint, ransacPlane, stats);
     points_depths(i) = depthPair.second;
     resultType(i) = depthPair.first;
-
     //        #pragma omp critical
     //        {
     //            LogDepthCalcStats(depthPair.first);
@@ -670,8 +662,7 @@ bool DepthEstimator::CalculateNearestPoint(
     const std::vector<int>& neighborsIndexCut, Eigen::Vector3d& nearestPoint,
     int& nearestPointIndex) {
   // Create depth vector of the 3d lidar points
-  Eigen::VectorXd points3dDepth;
-  points3dDepth.resize(neighbors.size());
+  Eigen::VectorXd points3dDepth(neighbors.size());
 
   for (uint i = 0; i < neighbors.size(); i++) {
     double distance = neighbors[i].z();
@@ -718,8 +709,7 @@ bool DepthEstimator::CalculateDepthSegmentation(
 
   if (_parameters->do_use_histogram_segmentation) {
     // Create depth vector of the 3d lidar points
-    Eigen::VectorXd points3dDepth;
-    points3dDepth.resize(neighbors.size());
+    Eigen::VectorXd points3dDepth(neighbors.size());
 
     for (uint i = 0; i < neighbors.size(); i++) {
       double distance = neighbors[i].z();
@@ -800,7 +790,7 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
       // use treshold
       pointsSegmented.push_back(neighbors[i]);
 
-#pragma omp critical
+// #pragma omp critical
       { _points_triangle_corners.push_back(neighbors[i]); }
     }
   }
@@ -928,8 +918,7 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
   double depth;
 
   if (_parameters->do_use_PCA) {
-    Eigen::MatrixXd pointCloud;
-    pointCloud.resize(3, pointsSegmented.size());
+    Eigen::MatrixXd pointCloud(3, pointsSegmented.size());
 
     for (size_t i = 0; i < pointsSegmented.size(); i++) {
       pointCloud(0, i) = pointsSegmented[i].x();

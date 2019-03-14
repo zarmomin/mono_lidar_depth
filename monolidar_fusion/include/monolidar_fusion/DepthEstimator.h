@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <Eigen/Eigen> // IWYU pragma: keep
+#include <Eigen/StdVector>
 //#include <opencv/cxcore.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -363,7 +364,8 @@ private:
 
     bool _isLatestTransformSet = false;
     // image variabes (input image)
-    int _imgWitdh, _imgHeight;
+    const int _imgWitdh = 720;
+    const int _imgHeight = 480;
 };
 
 

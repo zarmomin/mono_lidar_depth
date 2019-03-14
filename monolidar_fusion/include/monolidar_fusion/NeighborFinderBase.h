@@ -12,6 +12,7 @@
 
 #include "DepthCalcStatsSinglePoint.h"
 #include "DepthEstimatorParameters.h"
+#include <Eigen/StdVector>
 
 namespace Mono_Lidar {
 /*
@@ -60,7 +61,7 @@ public:
                       std::vector<Eigen::Vector3d>& neighbors);
 
     virtual ~NeighborFinderBase() = default;
-
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 protected:
     std::shared_ptr<DepthEstimatorParameters> _parameters;
 };

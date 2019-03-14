@@ -10,7 +10,7 @@
 #include <iostream>
 #include <memory>
 #include <Eigen/Eigen>
-
+#include <Eigen/StdVector>
 #include "DepthEstimatorParameters.h"
 
 namespace Mono_LidarPipeline {

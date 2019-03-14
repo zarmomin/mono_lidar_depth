@@ -8,6 +8,7 @@
 #pragma once
 
 #include <Eigen/Eigen>
+#include <Eigen/StdVector>
 
 namespace Mono_Lidar {
 class LinePlaneIntersectionCeckXZTreshold {

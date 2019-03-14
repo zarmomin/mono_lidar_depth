@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <Eigen/Eigen>
+#include <Eigen/StdVector>
 
 namespace Mono_Lidar {
 /*

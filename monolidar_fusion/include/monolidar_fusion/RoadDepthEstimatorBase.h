@@ -11,7 +11,7 @@
 #include <vector>
 
 #include <Eigen/Eigen>
-
+#include <Eigen/StdVector>
 #include "camera_pinhole.h"
 
 #include "LinePlaneIntersectionBase.h"

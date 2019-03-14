@@ -9,7 +9,7 @@
 
 #include <vector>
 #include <Eigen/Eigen>
-
+#include <Eigen/StdVector>
 #include "DepthCalcStatsSinglePoint.h"
 #include "Histogram.h"
 
