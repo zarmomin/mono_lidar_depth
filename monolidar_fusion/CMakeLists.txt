@@ -5,8 +5,7 @@ project(monolidar_fusion)
 ###################
 ## find packages ##
 ###################
-set(CMAKE_CXX_STANDARD 14)
-add_definitions( -march=native )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -march=native")
 add_definitions(-DEIGEN_DONT_ALIGN_STATICALLY)
 find_package(catkin_simple REQUIRED)
 find_package(OpenCV REQUIRED)
