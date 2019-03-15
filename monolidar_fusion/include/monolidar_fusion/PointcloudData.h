@@ -22,9 +22,10 @@ public:
     Eigen::Matrix2Xd _points_cs_image; // lidar points in image coordinates
     Eigen::Matrix2Xd
         _points_cs_image_visible; // subset of lidar points which are visible in the image in image coordimates
-    // list of indizes of points which are visible in the image (used for projection from the cut pointcloud
-    // (points from pointcloud which are visible in the image frame) into the original pointcloud)
-    std::vector<int> _pointIndex;
+
+    /// list of indices of points which are visible in the image (used for projection from the cut pointcloud
+    /// (points from pointcloud which are visible in the image frame) into the original pointcloud)
+    std::vector<int> _visiblePointIndices;
 
     PointcloudData() {
     }
@@ -47,7 +48,7 @@ public:
 
 
     int FromCutToOriginalIndex(int cutIndex) const {
-        return _pointIndex.at(cutIndex);
+        return _visiblePointIndices.at(cutIndex);
     }
 
     Eigen::Vector2d get2DPointFromCut(int cutIndex) const {

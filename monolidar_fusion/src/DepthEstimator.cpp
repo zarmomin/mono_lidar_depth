@@ -200,7 +200,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
 
     neighborFinder->InitializeLidarProjection(
         this->_points._points_cs_image_visible, this->_points._points_cs_camera,
-        this->_points._pointIndex);
+        this->_points._visiblePointIndices);
   } else if (_parameters->neighbor_search_mode == 1) {
     // use kdd tree
     //		auto neighborFinder =
@@ -346,8 +346,12 @@ void DepthEstimator::CutPointCloud(const Cloud::ConstPtr& cloud_in,
 }
 
 void DepthEstimator::getPointsCloudImageCs(
-    Eigen::Matrix2Xd& visiblePointsImageCs) {
+    Eigen::Matrix2Xd& visiblePointsImageCs, std::vector<double>& depths) {
   visiblePointsImageCs = this->_points._points_cs_image_visible;
+  for (int i=0;i<_points._visiblePointIndices.size();i++)
+  {
+    depths.push_back(getPointDepthCamVisible(i));
+  }
 }
 
 void DepthEstimator::getCloudRansacPlane(Cloud::Ptr& pointCloud_plane_ransac) {
@@ -619,11 +623,11 @@ bool DepthEstimator::CalculateNeighbors(
   // get the indices of the neighbors in the image
   this->_neighborFinder->getNeighbors(
       featurePoint_image_cs, this->_points._points_cs_camera,
-      this->_points._pointIndex, neighborIndicesCut, calcStats, scaleX, scaleY);
+      this->_points._visiblePointIndices, neighborIndicesCut, calcStats, scaleX, scaleY);
 
   // get the 3D neighbor points from the pointcloud using the given indices
   this->_neighborFinder->getNeighbors(this->_points._points_cs_camera,
-                                      this->_points._pointIndex,
+                                      this->_points._visiblePointIndices,
                                       neighborIndicesCut, neighbors);
 
   // Debug
@@ -777,7 +781,7 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
 
     // Map the index from the visible pointcloud to the original lidar cloud
     // The indizes of the ransac plane are based on the original cloud
-    int inidexRaw = _points._pointIndex[index];
+    int inidexRaw = _points._visiblePointIndices[index];
 
     Eigen::Vector3d point_lidar_cs = _transform_cam_to_lidar * neighbors[i];
     pcl::PointXYZ point(point_lidar_cs.x(), point_lidar_cs.y(),
@@ -1077,7 +1081,7 @@ void DepthEstimator::Transform_Cloud_LidarToCamera(
   _points._points_cs_image_visible.resize(2, pointCountImgVisible);
 
   int visibleIndex = 0;
-  _points._pointIndex.clear();
+  _points._visiblePointIndices.clear();
 
   for (int i = 0; i < pointCount; i++) {
     if (_points._pointsInImgRange[i]) {
@@ -1085,7 +1089,7 @@ void DepthEstimator::Transform_Cloud_LidarToCamera(
           _points._points_cs_image(0, i);
       _points._points_cs_image_visible(1, visibleIndex) =
           _points._points_cs_image(1, i);
-      _points._pointIndex.push_back(i);
+      _points._visiblePointIndices.push_back(i);
       visibleIndex++;
     }
   }

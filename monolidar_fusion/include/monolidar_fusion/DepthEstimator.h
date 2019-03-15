@@ -112,8 +112,9 @@ public:
         return _transform_lidar_to_cam;
     }
 
-    double getPointDepthCamVisible(int index) {
-        return _points._points_cs_camera(2, _points._pointIndex[index]);
+    double getPointDepthCamVisible(int loopCountIndex) {
+      int properIndex = _points._visiblePointIndices[loopCountIndex];
+      return _points._points_cs_camera.col(properIndex).norm();
     }
 
     std::shared_ptr<HelperLidarRowSegmentation> getLidarRowSegmentation() {
@@ -149,7 +150,7 @@ public:
     /*
      * Gets the lidar point cloud points which are visible in the camera image frame in image cs.
      */
-    void getPointsCloudImageCs(Eigen::Matrix2Xd& visiblePointsImageCs);
+    void getPointsCloudImageCs(Eigen::Matrix2Xd& visiblePointsImageCs, std::vector<double>& depths);
 
     /*
      * Gets all points that are estimated as a road by matching it with a plane using ransac

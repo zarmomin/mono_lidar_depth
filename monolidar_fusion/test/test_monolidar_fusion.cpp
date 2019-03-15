@@ -75,8 +75,8 @@ Eigen::Vector3d projectKeepDepth(Eigen::Vector3d p, Eigen::Matrix3d intrinsics) 
 
 TEST(Interface, complete_run)
 {
-    const int img_width = 752;
-    const int img_height = 480;
+  const int img_width = 720;
+  const int img_height = 480;
     const double cam_p_u = 375;
     const double cam_p_v = 239;
     const double cam_f = 395;
@@ -119,7 +119,7 @@ TEST(Interface, complete_run)
     double points_delta_z = 0.05;
     double intensity = 0;
 
-    Eigen::VectorXd point_depths;
+    Eigen::VectorXd point_depths(point_count);
 
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
     for (double y = points_min_y; y < points_max_y; y += points_delta_y) {
@@ -144,8 +144,8 @@ TEST(Interface, complete_run)
 
 TEST(Interface, complete_run2)
 {
-    const int img_width = 752;
-    const int img_height = 480;
+  const int img_width = 720;
+  const int img_height = 480;
     const double cam_p_u = 375;
     const double cam_p_v = 239;
     const double cam_f = 395;
@@ -185,7 +185,7 @@ TEST(Interface, complete_run2)
     double points_delta_z = 0.05;
     double intensity = 0;
 
-    Eigen::VectorXd point_depths;
+    Eigen::VectorXd point_depths(point_count);
 
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
     for (double y = points_min_y; y < points_max_y; y += points_delta_y) {
@@ -202,7 +202,80 @@ TEST(Interface, complete_run2)
     pcl::PointCloud<pcl::PointXYZI>::ConstPtr pointcloudpointer(new pcl::PointCloud<pcl::PointXYZI>(pointcloud));
     //Mono_Lidar::GroundPlane::Ptr groundplane = nullptr;
     depthEstimator->CalculateDepth(pointcloudpointer, points_2d_orig, point_depths);
-    // all points were successfully given a depth estimate
+}
+
+TEST(Interface, visiblePointRetrieval)
+{
+  const int img_width = 720;
+  const int img_height = 480;
+  const double cam_p_u = 375;
+  const double cam_p_v = 239;
+  const double cam_f = 395;
+  std::srand(42);
+  Eigen::Quaterniond q(0.5, 0.5, -0.5, 0.5);
+  Eigen::Vector3d r(0,0,0);
+  Eigen::Matrix3d intrinsics = Eigen::Matrix3d::Identity();
+  intrinsics(0, 0) = intrinsics(1, 1) = cam_f;
+  intrinsics(0, 2) = cam_p_u;
+  intrinsics(1, 2) = cam_p_v;
+  std::shared_ptr<Mono_Lidar::DepthEstimator> depthEstimator = std::make_shared<Mono_Lidar::DepthEstimator>();
+  depthEstimator->InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
+  depthEstimator->Initialize(r,q,intrinsics);
+
+  // generate camera points
+  const int point_count = 50;
+
+  Eigen::Matrix2Xd points_2d_orig;
+  points_2d_orig.resize(2, point_count);
+
+  for (int i = 0; i < point_count; i++) {
+    const int u = ( std::rand() % ( img_width + 1 ) );
+    const int v = ( std::rand() % ( img_height + 1 ) );
+    points_2d_orig(0, i) = u;
+    points_2d_orig(1, i) = v;
+  }
+
+  // generate lidar points
+  double points_min_x = 4.99;
+  double points_max_x = 5;
+  double points_delta_x = 1;
+  double points_min_y = -5;
+  double points_max_y = 5;
+  double points_delta_y = 0.04;
+  double points_min_z = -3;
+  double points_max_z = 3;
+  double points_delta_z = 0.05;
+  double intensity = 0;
+
+  Eigen::VectorXd point_depths(point_count);
+
+  pcl::PointCloud<pcl::PointXYZI> pointcloud;
+  for (double y = points_min_y; y < points_max_y; y += points_delta_y) {
+    for (double x = points_max_x; x > points_min_x; x -= points_delta_x) {
+      for (double z = points_min_z; z < points_max_z; z+=points_delta_z) {
+        pcl::PointXYZI pt(intensity);
+        pt.x = x;
+        pt.y = y;
+        pt.z = z;
+        pointcloud.push_back(pt);
+      }
+    }
+  }
+  pcl::PointCloud<pcl::PointXYZI>::ConstPtr pointcloudpointer(new pcl::PointCloud<pcl::PointXYZI>(pointcloud));
+  //Mono_Lidar::GroundPlane::Ptr groundplane = nullptr;
+  depthEstimator->CalculateDepth(pointcloudpointer, points_2d_orig, point_depths);
+  Eigen::Matrix2Xd visiblePoints;
+  std::vector<double> depths;
+  depthEstimator->getPointsCloudImageCs(visiblePoints, depths);
+  ASSERT_TRUE(depths.size() > 0);
+  ASSERT_TRUE(depths.size() == visiblePoints.cols());
+
+  for (int i=0;i < depths.size();i++)
+  {
+    ASSERT_TRUE(depths[i] > points_min_x);
+    ASSERT_TRUE(visiblePoints(0, i) >= 0 && visiblePoints(0, i) < img_width);
+    ASSERT_TRUE(visiblePoints(1, i) >= 0 && visiblePoints(1, i) < img_height);
+  }
 }
 
 TEST(NeigborFinder, findByPixel) {
@@ -325,7 +398,7 @@ TEST(LidarSegmenter, test1) {
     points_cloud._points_cs_camera.resize(3, points_count);
     points_cloud._points_cs_image.resize(2, points_count);
     points_cloud._points_cs_image_visible.resize(2, points_count);
-    points_cloud._pointIndex.resize(points_count);
+    points_cloud._visiblePointIndices.resize(points_count);
     points_cloud._pointsInImgRange.resize(points_count);
     int i = 0;
 
@@ -337,7 +410,7 @@ TEST(LidarSegmenter, test1) {
             points_cloud._points_cs_lidar(2, i) = points_z;
 
             // misc
-            points_cloud._pointIndex.at(i) = i;
+            points_cloud._visiblePointIndices.at(i) = i;
             points_cloud._pointsInImgRange[i] = true;
 
             i++;
@@ -356,7 +429,7 @@ TEST(LidarSegmenter, test1) {
     auto row_segentation = std::make_shared<Mono_Lidar::HelperLidarRowSegmentation>();
 
     // test row segmenter
-    std::vector<int> points_segmented_index = points_cloud._pointIndex;
+    std::vector<int> points_segmented_index = points_cloud._visiblePointIndices;
     Eigen::Vector2d feature_point(cam_p_u, cam_p_v);
 
     double max_dist_treshold = 0;
