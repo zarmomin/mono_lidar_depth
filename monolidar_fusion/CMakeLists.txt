@@ -77,6 +77,9 @@ target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} ${
 cs_add_executable(${PROJECT_NAME}-test test/test_monolidar_fusion.cpp)
 target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME} gtest_main)
 
+cs_add_executable(${PROJECT_NAME}_node src/fusion_node.cc)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
+
 #############
 ## Install ##
 #############
