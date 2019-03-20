@@ -11,10 +11,10 @@ neighbor_search_mode: 0 # 0-> take neighbor pixels in image plane using a rectan
 
 # if a kdd-tree is used (neighbor_search_mode = 1) then this is the neighbor search radius with the given feature point in the center
 # if the neighbors are selected using a rectangle on the image plane then this parameter describes the width of the rectangle
-pixelarea_search_witdh: 6
+pixelarea_search_witdh: 10
 
 # height of the rectangle (only used for selection rect)
-pixelarea_search_height: 9
+pixelarea_search_height: 10
 
 # offset of the rectangle in x (only used for selection rect)
 # The feature point is centered in the middle of the rect when both offset variables are 0
@@ -45,7 +45,7 @@ do_use_radiusSearch: 1
 radiusSearch_radius: 10
 
 # minimum point count for radius search. If less neighbors are found then the feature point is set as an outlier
-radiusSearch_count_min: 1
+radiusSearch_count_min: 3
 
 # ____________________________________
 
@@ -58,7 +58,7 @@ radiusSearch_count_min: 1
 do_use_histogram_segmentation: 1
 # the size of a single histogram bin (in meters). A bigger bin size guarantees a higher success chance to get enough points inside a bin.
 # A Smaller bin size yields a better segmentation and smaller depth gaps
-histogram_segmentation_bin_witdh: 0.3 # in meters
+histogram_segmentation_bin_witdh: 1 # in meters
 # the minimum bin value (point count inside a depth range) for a valid local maximum. 
 histogram_segmentation_min_pointcount: 3
 
@@ -171,11 +171,11 @@ do_check_triangleplanar_condition: 1
 # A higher value insures a more equal length of all three triangle edges
 triangleplanar_crossnorm_treshold: 0.1
 # The higher this value, the more orthogonal the local patch is to view ray (less error prone)
-viewray_plane_orthoganality_treshold: 0.03
+viewray_plane_orthoganality_treshold: 0.0
 
 
 # _____ Debug _____
 
-do_debug_singleFeatures: 0
+do_debug_singleFeatures: 1
 do_publish_points: 0
 do_depth_calc_statistics: 0

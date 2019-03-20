@@ -33,8 +33,9 @@ public:
      *
      * @return bool True, if a local maximum with the minimum value (point count in the bin) has been found, else false
      */
+    // todo: make the blob width dependent on the mean/median depth
     static bool FilterPointsMinDistBlob(const std::vector<Eigen::Vector3d>& inputPoints,
-                                        const std::vector<int>& neighborsIndex,
+                                        const std::vector<uint16_t>& neighborsIndex,
                                         const Eigen::VectorXd& inputDepths,
                                         const double binWitdh,
                                         const int minimalMaximumSize,
@@ -57,7 +58,7 @@ public:
      *
      */
     static bool GetNearestPoint(const std::vector<Eigen::Vector3d>& inputPoints,
-                                const std::vector<int>& neighborsIndex,
+                                const std::vector<uint16_t>& neighborsIndex,
                                 const Eigen::VectorXd& inputDepths,
                                 std::vector<Eigen::Vector3d>& output,
                                 std::vector<int>& outputIndex);

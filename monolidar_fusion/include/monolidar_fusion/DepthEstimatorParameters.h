@@ -148,7 +148,7 @@ public:
     bool do_use_triangle_size_maximation{true};
     bool do_check_triangleplanar_condition{true};
     double triangleplanar_crossnorm_treshold{0.1};
-    double viewray_plane_orthoganality_treshold{01};
+    double viewray_plane_orthoganality_treshold{0.1};
     bool set_all_depths_to_zero{false};
 
     std::string str_do_use_cut_behind_camera = "do_use_cut_behind_camera";

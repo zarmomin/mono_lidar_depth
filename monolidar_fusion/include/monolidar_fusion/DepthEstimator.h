@@ -15,7 +15,6 @@
 #include <pcl/point_types.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/surface/gp3.h>
-
 #include "monolidar_fusion/DepthCalcStatsSinglePoint.h"
 #include "monolidar_fusion/DepthCalculationStatistics.h"
 #include "monolidar_fusion/DepthEstimatorParameters.h"
@@ -31,6 +30,7 @@
 #include "monolidar_fusion/TresholdDepthLocal.h"
 #include "monolidar_fusion/camera_pinhole.h"
 #include "monolidar_fusion/eDepthResultType.h"
+#include "monolidar_fusion/common.h"
 
 namespace Mono_Lidar {
 
@@ -114,11 +114,7 @@ public:
 
     double getPointDepthCamVisible(int loopCountIndex) {
       int properIndex = _points._visiblePointIndices[loopCountIndex];
-      return _points._points_cs_camera.col(properIndex).norm();
-    }
-
-    std::shared_ptr<HelperLidarRowSegmentation> getLidarRowSegmentation() {
-        return _lidarRowSegmenter;
+      return norm(_points._points_cs_camera[properIndex]);
     }
 
     /*
@@ -139,7 +135,7 @@ public:
     /*
      * Returns a point cloud containing all points which were found by the neirest neighbors search
      */
-    void getCloudNeighbors(Cloud::Ptr& pointCloud_neighbors);
+    void getCloudNeighbors(std::vector<Eigen::Vector2d>& pts);
 
     /*
      * Returns a point cloud which contains all corner points of the triangles used for point interpolation/depth
@@ -150,7 +146,7 @@ public:
     /*
      * Gets the lidar point cloud points which are visible in the camera image frame in image cs.
      */
-    void getPointsCloudImageCs(Eigen::Matrix2Xd& visiblePointsImageCs, std::vector<double>& depths);
+    void getPointsCloudImageCs(std::vector<cv::Point2f> &visiblePointsImageCs, std::vector<double> &depths);
 
     /*
      * Gets all points that are estimated as a road by matching it with a plane using ransac
@@ -262,14 +258,14 @@ private:
      * @param Object for statistics
      */
     bool CalculateNeighbors(const Eigen::Vector2d& featurePoint_image_cs,
-                            std::vector<int>& neighborIndices,
+                            std::vector<uint16_t>& neighborIndices,
                             std::vector<Eigen::Vector3d>& neighbors,
                             std::shared_ptr<DepthCalcStatsSinglePoint> calcStats,
                             const float scaleX = 1.0,
                             const float scaleY = 1.0);
 
     bool CalculateDepthSegmentation(const std::vector<Eigen::Vector3d>& neighbors,
-                                    const std::vector<int>& neighborsIndex,
+                                    const std::vector<uint16_t>& neighborsIndex,
                                     std::vector<Eigen::Vector3d>& pointsSegmented,
                                     std::vector<int>& pointsSegmentedIndex,
                                     std::shared_ptr<DepthCalcStatsSinglePoint> calcStats);
@@ -295,7 +291,7 @@ private:
                                          std::vector<int>& imgNeighborsSegmentedIndex);
 
     bool CalculateDepthSegmentationPlane(const std::vector<Eigen::Vector3d>& neighbors,
-                                         const std::vector<int> neighborIndices,
+                                         const std::vector<uint16_t> neighborIndices,
                                          std::vector<Eigen::Vector3d>& pointsSegmented,
                                          std::shared_ptr<DepthCalcStatsSinglePoint> calcStats,
                                          GroundPlane::Ptr ransacPlane);
@@ -307,9 +303,9 @@ private:
 
     /**
      * Transforms the pointcloud (lidar cs) into the camera cs and projects it's points into the image frame
-     * @param lidar_to_cam Affine transformation from lidar to camera cooridnates
+     * @param lidar_to_cam Affine transformation from lidar to camera cooridnates#include <opencv2/core.hpp>
      */
-    void Transform_Cloud_LidarToCamera(const Cloud::ConstPtr& cloud_lidar_cs, const Eigen::Affine3d& lidar_to_cam);
+    void Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_lidar_cs);
 
     /**
      * Writes a lidar point cloud into a different format.
@@ -340,7 +336,7 @@ private:
                                                              // triangle image plane from he ground plane
     std::vector<Eigen::Vector3d>
         _points_triangle_corners; // list of triangle corners (lidar points) spanning a local patch for a feature point
-    std::vector<Eigen::Vector3d> _points_neighbors;   // list of points of all found neighbor points
+    std::vector<Eigen::Vector2d> _points_neighbors;   // list of points of all found neighbor points
     std::vector<Eigen::Vector3d> _points_groundplane; // list of points which are estimated as ground plane
 
     // Following objects are the modules used for depth estimation
@@ -352,7 +348,6 @@ private:
     std::shared_ptr<LinePlaneIntersectionBase> _linePlaneIntersection;
     std::shared_ptr<PlaneEstimationCheckPlanar> _checkPlanarTriangle;
     std::shared_ptr<PlaneEstimationCalcMaxSpanningTriangle> _planeCalcMaxSpanning;
-    std::shared_ptr<HelperLidarRowSegmentation> _lidarRowSegmenter;
 
     // Misc
     bool _debugMode = false;

@@ -7,22 +7,20 @@
 
 #include "monolidar_fusion/NeighborFinderBase.h"
 
+
 namespace Mono_Lidar {
 void NeighborFinderBase::Initialize(std::shared_ptr<DepthEstimatorParameters>& parameters) {
     _parameters = parameters;
 }
 
-void NeighborFinderBase::getNeighbors(const Eigen::Matrix3Xd& points_cs_camera,
-                                      const std::vector<int>& pointIndices,
-                                      const std::vector<int>& pcIndicesCut,
-                                      std::vector<Eigen::Vector3d>& neighbors) {
+void NeighborFinderBase::getNeighbors(const std::vector<cv::Point3f> &points_cs_camera,
+                                      const std::vector<uint16_t> &pcIndicesCut,
+                                      std::vector<Eigen::Vector3d> &neighbors) {
     using namespace std;
 
-    for (const int index : pcIndicesCut) {
-        int indexRaw = pointIndices.at(index);
-
-        neighbors.push_back(Eigen::Vector3d(
-            points_cs_camera(0, indexRaw), points_cs_camera(1, indexRaw), points_cs_camera(2, indexRaw)));
+    for (const uint16_t index : pcIndicesCut) {
+        const cv::Point3f& pt = points_cs_camera[index];
+        neighbors.push_back(Eigen::Vector3d(pt.x, pt.y, pt.z));
     }
 }
 

@@ -49,6 +49,10 @@
 #include "monolidar_fusion/DepthEstimator.h"
 #include "monolidar_fusion/camera_pinhole.h"
 #include "monolidar_fusion/DepthEstimatorParameters.h"
+#include "monolidar_fusion/DepthEstimationWrapper.h"
+#include <pcl_conversions/pcl_conversions.h>
+#include <cv_bridge/cv_bridge.h>
+#include <regex>
 
 // A google test function (uncomment the next function, add code and
 // change the names TestGroupName and TestName)
@@ -71,6 +75,80 @@ Eigen::Vector3d projectKeepDepth(Eigen::Vector3d p, Eigen::Matrix3d intrinsics) 
 
     return Eigen::Vector3d(proj[0], proj[1], p.z());
 }
+}
+
+void readPointCloud(const std::string& filename, pcl::PointCloud<pcl::PointXYZI>& cloud)
+{
+  std::ifstream file (filename); //file just has some sentences
+  if (!file) {
+    std::cout << "unable to open file";
+    return;
+  }
+  std::string sentence;
+  std::regex r("(.*) (.*) (.*) (.*)");
+  int i=0;
+  while (std::getline(file, sentence))
+  {
+    if (i>10) {
+      std::smatch sm;
+      if (std::regex_search(sentence, sm, r)) {
+        pcl::PointXYZI pt;
+        pt.x = std::strtof(sm[1].str().c_str(), 0);
+        pt.y = std::strtof(sm[2].str().c_str(), 0);
+        pt.z = std::strtof(sm[3].str().c_str(), 0);
+        pt.intensity = std::strtof(sm[4].str().c_str(), 0);
+        cloud.push_back(pt);
+      }
+    }
+    i++;
+  }
+}
+
+template<typename Func>
+struct lambda_as_visitor_wrapper : Func {
+  lambda_as_visitor_wrapper(const Func& f) : Func(f) {}
+  template<typename S,typename I>
+  void init(const S& v, I i, I j) { return Func::operator()(v,i,j); }
+};
+
+template<typename Mat, typename Func>
+void visit_lambda(const Mat& m, const Func& f)
+{
+  lambda_as_visitor_wrapper<Func> visitor(f);
+  m.visit(visitor);
+}
+
+
+
+TEST(Wellwlee, reductions)
+{
+  pcl::PointCloud<pcl::PointXYZI> feature_cloud;
+  readPointCloud("/home/nico/datasets/eschlikon/raww/1549469580.744550_features.pcd", feature_cloud);
+  Eigen::Matrix2Xd m = feature_cloud.getMatrixXfMap().cast<double>().topRows<2>();
+  std::vector<Eigen::Triplet<double>> indices;
+  visit_lambda(m,
+               [&indices](double v, int i, int j) {
+                 if(i==0 && v<400)
+                   indices.push_back(Eigen::Triplet<double>(i,j,v));
+               });
+
+}
+
+TEST(Interface, real_data)
+{
+  DepthEstimationWrapper wrapper;
+  wrapper.lidar_time = 1549469580.744550;
+  //wrapper.image_time = wrapper.lidar_time;
+  wrapper.feature_time = wrapper.lidar_time;
+  //wrapper.image = cv::imread("/home/nico/datasets/eschlikon/raww/1549469580.744550_img.png", cv::IMREAD_GRAYSCALE);
+  pcl::PointCloud<pcl::PointXYZI> feature_cloud, laser_cloud;
+  readPointCloud("/home/nico/datasets/eschlikon/raww/1549469580.744550_features.pcd", feature_cloud);
+  *wrapper.feature_point_cloud = feature_cloud;
+  readPointCloud("/home/nico/datasets/eschlikon/raww/1549469580.744550_cloud.pcd", laser_cloud);
+  wrapper.assignValuesFromFeatureCloud();
+  pcl::PointCloud<pcl::PointXYZI>::ConstPtr lidar_cloud;
+  lidar_cloud = pcl::PointCloud<pcl::PointXYZI>::ConstPtr(new pcl::PointCloud<pcl::PointXYZI>(laser_cloud));
+  wrapper.handleDepthAssociation(lidar_cloud);
 }
 
 TEST(Interface, complete_run)
@@ -125,18 +203,20 @@ TEST(Interface, complete_run)
     for (double y = points_min_y; y < points_max_y; y += points_delta_y) {
         for (double x = points_max_x; x > points_min_x; x -= points_delta_x) {
             for (double z = points_min_z; z < points_max_z; z+=points_delta_z) {
+                Eigen::Vector3d v = l2c * Eigen::Vector3d(x,y,z);
                 pcl::PointXYZI pt(intensity);
-                pt.x = x;
-                pt.y = y;
-                pt.z = z;
+                pt.x = v[0];
+                pt.y = v[1];
+                pt.z = v[2];
                 pointcloud.push_back(pt);
             }
         }
     }
+
     pcl::PointCloud<pcl::PointXYZI>::ConstPtr pointcloudpointer(new pcl::PointCloud<pcl::PointXYZI>(pointcloud));
     Mono_Lidar::GroundPlane::Ptr groundplane = nullptr;
     depthEstimator.CalculateDepth(pointcloudpointer, points_2d_orig, point_depths, groundplane);
-
+    std::cout << "\n" << (point_depths.array() < 0).count() << "\n";
     // all points were successfully given a depth estimate
     ASSERT_TRUE(point_depths.minCoeff() >= points_min_x);
     ASSERT_TRUE(point_depths.maxCoeff() >= points_max_x);
@@ -192,9 +272,9 @@ TEST(Interface, complete_run2)
         for (double x = points_max_x; x > points_min_x; x -= points_delta_x) {
             for (double z = points_min_z; z < points_max_z; z+=points_delta_z) {
                 pcl::PointXYZI pt(intensity);
-                pt.x = x;
-                pt.y = y;
-                pt.z = z;
+                pt.x = -y;
+                pt.y = -z;
+                pt.z = x;
                 pointcloud.push_back(pt);
             }
         }
@@ -254,9 +334,9 @@ TEST(Interface, visiblePointRetrieval)
     for (double x = points_max_x; x > points_min_x; x -= points_delta_x) {
       for (double z = points_min_z; z < points_max_z; z+=points_delta_z) {
         pcl::PointXYZI pt(intensity);
-        pt.x = x;
-        pt.y = y;
-        pt.z = z;
+        pt.x = -y;
+        pt.y = -z;
+        pt.z = x;
         pointcloud.push_back(pt);
       }
     }
@@ -264,20 +344,20 @@ TEST(Interface, visiblePointRetrieval)
   pcl::PointCloud<pcl::PointXYZI>::ConstPtr pointcloudpointer(new pcl::PointCloud<pcl::PointXYZI>(pointcloud));
   //Mono_Lidar::GroundPlane::Ptr groundplane = nullptr;
   depthEstimator->CalculateDepth(pointcloudpointer, points_2d_orig, point_depths);
-  Eigen::Matrix2Xd visiblePoints;
+  std::vector<cv::Point2f> visiblePoints;
   std::vector<double> depths;
   depthEstimator->getPointsCloudImageCs(visiblePoints, depths);
   ASSERT_TRUE(depths.size() > 0);
-  ASSERT_TRUE(depths.size() == visiblePoints.cols());
+  ASSERT_TRUE(depths.size() == visiblePoints.size());
 
   for (int i=0;i < depths.size();i++)
   {
     ASSERT_TRUE(depths[i] > points_min_x);
-    ASSERT_TRUE(visiblePoints(0, i) >= 0 && visiblePoints(0, i) < img_width);
-    ASSERT_TRUE(visiblePoints(1, i) >= 0 && visiblePoints(1, i) < img_height);
+    ASSERT_TRUE(visiblePoints[i].x >= 0 && visiblePoints[i].x < img_width);
+    ASSERT_TRUE(visiblePoints[i].y >= 0 && visiblePoints[i].y < img_height);
   }
 }
-
+/*
 TEST(NeigborFinder, findByPixel) {
     const int img_width = 100;
     const int img_height = 100;
@@ -295,16 +375,14 @@ TEST(NeigborFinder, findByPixel) {
     // init points
     const int point_count = 50;
 
-    Eigen::Matrix2Xd points_2d_orig;
-    points_2d_orig.resize(2, point_count);
+    std::vector<cv::Point2f> points_2d_orig;
     Eigen::Matrix3Xd points_3d_cam;
     points_3d_cam.resize(3, point_count);
 
     for (int i = 0; i < point_count; i++) {
         const int u = std::rand() % 10;
         const int v = std::rand() % 10;
-        points_2d_orig(0, i) = u;
-        points_2d_orig(1, i) = v;
+        points_2d_orig.push_back(cv::Point2f(u, v));
     }
 
     Eigen::Matrix3Xd support_points;
@@ -336,7 +414,7 @@ TEST(NeigborFinder, findByPixel) {
         point_index.push_back(i);
     }
 
-    neighborFinder.InitializeLidarProjection(points_2d_orig, points_3d_cam, point_index);
+  neighborFinder.InitializeLidarProjection(points_2d_orig);
 
     // get neighbors from tested method
     for (int i = 0; i < point_count; i++) {
@@ -367,117 +445,14 @@ TEST(NeigborFinder, findByPixel) {
             ASSERT_LE(dist_from_feature_v, std::ceil(static_cast<double>(nf_search_height) * 0.5) + 0.01);
         }
     }
-}
+}*/
 
-TEST(LidarSegmenter, test1) {
-    // Init camera
-    const int img_width = 2000;
-    const int img_height = 2000;
-    const double cam_p_u = img_width * 0.5;
-    const double cam_p_v = img_height * 0.5;
-    const double cam_f = 600;
-
-    std::shared_ptr<CameraPinhole> cam;
-    cam = std::make_shared<CameraPinhole>(img_width, img_height, cam_f, cam_p_u, cam_p_v);
-
-    // Create point cloud
-    Mono_Lidar::PointcloudData points_cloud;
-
-    double points_min_x = -10;
-    double points_max_x = 10;
-    double points_delta_x = 1;
-    double points_min_y = -10;
-    double points_max_y = 10;
-    double points_delta_y = 1;
-    double points_z = 20;
-
-    int points_count =
-        (int)(((points_max_x - points_min_x) / points_delta_x) * ((points_max_y - points_min_y) / points_delta_y));
-
-    points_cloud._points_cs_lidar.resize(3, points_count);
-    points_cloud._points_cs_camera.resize(3, points_count);
-    points_cloud._points_cs_image.resize(2, points_count);
-    points_cloud._points_cs_image_visible.resize(2, points_count);
-    points_cloud._visiblePointIndices.resize(points_count);
-    points_cloud._pointsInImgRange.resize(points_count);
-    int i = 0;
-
-    for (double y = points_min_y; y < points_max_y; y += points_delta_y) {
-        for (double x = points_max_x; x > points_min_x; x -= points_delta_x) {
-            // create 3d points
-            points_cloud._points_cs_lidar(0, i) = x;
-            points_cloud._points_cs_lidar(1, i) = y;
-            points_cloud._points_cs_lidar(2, i) = points_z;
-
-            // misc
-            points_cloud._visiblePointIndices.at(i) = i;
-            points_cloud._pointsInImgRange[i] = true;
-
-            i++;
-        }
-    }
-
-    points_cloud._points_cs_camera = points_cloud._points_cs_lidar;
-
-    // project into camera
-    points_cloud._points_cs_image.resize(2, points_count);
-    cam->getImagePoints(points_cloud._points_cs_camera, points_cloud._points_cs_image);
-
-    points_cloud._points_cs_image_visible = points_cloud._points_cs_image;
-
-    // create row segmentation object
-    auto row_segentation = std::make_shared<Mono_Lidar::HelperLidarRowSegmentation>();
-
-    // test row segmenter
-    std::vector<int> points_segmented_index = points_cloud._visiblePointIndices;
-    Eigen::Vector2d feature_point(cam_p_u, cam_p_v);
-
-    double max_dist_treshold = 0;
-    double max_dist_seed_to_seed_start = 5;
-    double max_dist_seed_to_seed_gradient = 0;
-    double max_dist_neighbor_to_seed_start = 5;
-    double max_dist_neighbor_to_seed_gradient = 0;
-    double max_dist_neighbor_start = 2;
-    double max_dist_eighbor_gradient = 0;
-    int maxPointCount = -1;
-
-    row_segentation->SegmentPoints(points_cloud._points_cs_image_visible);
-
-    int result = row_segentation->calculateNeighborPoints(points_cloud,
-                                                          feature_point,
-                                                          max_dist_treshold,
-                                                          max_dist_seed_to_seed_start,
-                                                          max_dist_seed_to_seed_gradient,
-                                                          max_dist_neighbor_to_seed_start,
-                                                          max_dist_neighbor_to_seed_gradient,
-                                                          max_dist_neighbor_start,
-                                                          max_dist_eighbor_gradient,
-                                                          maxPointCount,
-                                                          points_segmented_index);
-
-    ASSERT_EQ(result, 1);
-
-    std::cout << "Calculation result code: " << result << std::endl;
-    std::cout << "Neighbor points count: " << points_segmented_index.size() << std::endl;
-
-    for (const auto& index : points_segmented_index) {
-        Eigen::Vector3d result_point(points_cloud._points_cs_camera(0, index),
-                                     points_cloud._points_cs_camera(1, index),
-                                     points_cloud._points_cs_camera(2, index));
-
-        std::cout << "Result point: "
-                  << "x: " << result_point.x() << ", y: " << result_point.y() << ", z: " << result_point.z()
-                  << std::endl;
-    }
-
-    ASSERT_EQ(points_segmented_index.size(), 8);
-}
 
 TEST(Histogram, GetNearestPoint) {
     // init point-list
     const int points_count = 10;
     std::vector<Eigen::Vector3d> input_points;
-    std::vector<int> points_index;
+    std::vector<uint16_t> points_index;
     Eigen::VectorXd input_depths;
     input_depths.resize(points_count);
 
@@ -521,7 +496,7 @@ TEST(Histogram, FilterPointsMinDistBlob) {
     input_points.push_back(Eigen::Vector3d(0, 0, 10.5));
     int points_count = input_points.size();
 
-    std::vector<int> points_index;
+    std::vector<uint16_t> points_index;
     Eigen::VectorXd input_depths;
     input_depths.resize(points_count);
 

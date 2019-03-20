@@ -8,7 +8,8 @@
 #pragma once
 
 #include <Eigen/Eigen>
-
+#include <opencv2/core/types.hpp>
+#include <opencv2/core.hpp>
 #include "NeighborFinderBase.h"
 
 namespace Mono_Lidar {
@@ -21,24 +22,18 @@ public:
 
     void Initialize(std::shared_ptr<DepthEstimatorParameters>& parameters) override;
 
-    void InitializeLidarProjection(const Eigen::Matrix2Xd& lidarPoints_img_cs,
-                                   const Eigen::Matrix3Xd& points_cs_camera,
-                                   const std::vector<int>& pointIndex);
+    void InitializeLidarProjection(const std::vector<cv::Point2f> &lidarPoints_image_cs);
 
     // gets the neighbors of a given feature point including the point itself
-    void getNeighbors(const Eigen::Vector2d& featurePoint_image_cs,
-                      const Eigen::Matrix3Xd& points_cs_camera,
-                      const std::vector<int>& pointIndex,
-                      std::vector<int>& pcIndicesCut,
-                      const std::shared_ptr<DepthCalcStatsSinglePoint>& calcStats = NULL,
+    void getNeighbors(const Eigen::Vector2d &featurePoint_image_cs,
+                      const std::vector<cv::Point3f> &points_cs_camera,
+                      std::vector<uint16_t> &pcIndicesCut,
+                      const std::shared_ptr<DepthCalcStatsSinglePoint> &calcStats = NULL,
                       const float scaleWidth = 1,
                       const float scaleHeight = 1) override;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
-    // Constants
-    const int POINT_NOT_DEFINED = -1;
-
-    Eigen::MatrixXi _img_points_lidar; // Matrix with dim (imgWitdh*imgHeight). Each pixels stores a index of a
+    cv::Mat _img_points_lidar; // Matrix with dim (imgWitdh*imgHeight). Each pixels stores a index of a
                                        // projected (visible) lidar point or -1 if no point aviable at this pixel
 
     int _imgWitdth;

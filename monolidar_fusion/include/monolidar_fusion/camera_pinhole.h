@@ -85,6 +85,12 @@ public: // Public methods.
         return is_in_bounds;
     }
 
+    bool getImagePoint(const Eigen::Vector3d& pt, Eigen::Vector2d& pt_image)
+    {
+        pt_image = (intrinsics * pt).hnormalized();
+        return pt_image[0] >= 0 && pt_image[0] < width_ && pt_image[1] >= 0 && pt_image[1] < height_;
+    }
+
 private:
     void makeIntrinsics(double focal_length, double principal_point_x, double principal_point_y) {
         intrinsics = Eigen::Matrix3d::Identity();

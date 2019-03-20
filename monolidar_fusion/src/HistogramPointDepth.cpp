@@ -13,7 +13,7 @@
 namespace Mono_Lidar {
 
 bool PointHistogram::FilterPointsMinDistBlob(const std::vector<Eigen::Vector3d>& inputPoints,
-                                             const std::vector<int>& neighborsIndex,
+                                             const std::vector<uint16_t>& neighborsIndex,
                                              const Eigen::VectorXd& inputDepths,
                                              const double binWitdh,
                                              const int minimalMaximumSize,
@@ -80,8 +80,8 @@ bool PointHistogram::FilterPointsMinDistBlob(const std::vector<Eigen::Vector3d>&
             break;
 
         // cancel if single points are detected which are under the minimum count
-        if ((lastBinValue > 0) && (binValue == 0))
-            return false;
+        //if ((lastBinValue > 0) && (binValue == 0))
+        //    return false;
     }
 
     // debug log
@@ -123,7 +123,7 @@ bool PointHistogram::FilterPointsMinDistBlob(const std::vector<Eigen::Vector3d>&
 }
 
 bool PointHistogram::GetNearestPoint(const std::vector<Eigen::Vector3d>& inputPoints,
-                                     const std::vector<int>& neighborsIndex,
+                                     const std::vector<uint16_t>& neighborsIndex,
                                      const Eigen::VectorXd& inputDepths,
                                      std::vector<Eigen::Vector3d>& output,
                                      std::vector<int>& outputIndex) {

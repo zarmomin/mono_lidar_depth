@@ -86,18 +86,18 @@ private:
 
 
     // Flags if to specify which debug Types are active
-    bool _isEnabled = false;
+    bool _isEnabled = true;
     int _logMsgLevel = 0;
-    bool _logFlagMethodNamesStart = false;
-    bool _logFlagMethodNamesEnd = false;
-    bool _logFlagMethodTimeDuration = false;
-    bool _logFlagTimeInterval = false;
+    bool _logFlagMethodNamesStart = true;
+    bool _logFlagMethodNamesEnd = true;
+    bool _logFlagMethodTimeDuration = true;
+    bool _logFlagTimeInterval = true;
     bool _logFlagCheckPoint = false;
     bool _logFlagWarning = false;
     bool _logFlagError = false;
 
     // debug output
-    bool _outFlagConsole = false;
+    bool _outFlagConsole = true;
     bool _outFlagFile = false;
 
     std::string _filePath = "";

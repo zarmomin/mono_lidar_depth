@@ -9,7 +9,7 @@
 
 #include <memory>
 #include <Eigen/Eigen>
-
+#include <opencv2/core.hpp>
 #include "DepthCalcStatsSinglePoint.h"
 #include "DepthEstimatorParameters.h"
 #include <Eigen/StdVector>
@@ -32,11 +32,10 @@ public:
      * point set
      * @pcIndicesRaw [out] The indices of the neighbors based on cam pointcloud
      */
-    virtual void getNeighbors(const Eigen::Vector2d& featurePoint_image_cs,
-                              const Eigen::Matrix3Xd& points_cs_camera,
-                              const std::vector<int>& pointIndex,
-                              std::vector<int>& pcIndicesRaw,
-                              const std::shared_ptr<DepthCalcStatsSinglePoint>& calcStats = NULL,
+    virtual void getNeighbors(const Eigen::Vector2d &featurePoint_image_cs,
+                              const std::vector<cv::Point3f> &points_cs_camera,
+                              std::vector<uint16_t> &pcIndicesRaw,
+                              const std::shared_ptr<DepthCalcStatsSinglePoint> &calcStats = NULL,
                               const float scaleWidth = 1,
                               const float scaleHeight = 1) = 0;
 
@@ -46,10 +45,9 @@ public:
      * @param imgIndicesCut [in] Indices of the neighbors based on the cut image indices
      * @param neighbors [out] List of the 3d neighbors (lidar points)
      */
-    void getNeighbors(const Eigen::Matrix3Xd& points_cs_camera,
-                      const std::vector<int>& pointIndices,
-                      const std::vector<int>& imgIndicesCut,
-                      std::vector<Eigen::Vector3d>& neighbors);
+    void getNeighbors(const std::vector<cv::Point3f> &points_cs_camera,
+                      const std::vector<uint16_t> &imgIndicesCut,
+                      std::vector<Eigen::Vector3d> &neighbors);
 
     /*
      * Get the 3d Points from a cloud using it's indices

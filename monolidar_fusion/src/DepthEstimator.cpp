@@ -7,6 +7,7 @@
 
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
+#include <Eigen/Core>
 #include <exception>
 #include <limits>
 
@@ -29,6 +30,8 @@
 #include "monolidar_fusion/RoadDepthEstimatorMaxSpanningTriangle.h"
 
 #include <chrono>
+#include <opencv2/core/types.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
 
 namespace Mono_Lidar {
 
@@ -126,10 +129,6 @@ bool DepthEstimator::InitializeParameters()
     } else {
         this->_roadDepthEstimator = NULL;
     }
-    // Module for further depth segmentation
-    if (_parameters->do_use_depth_segmentation) {
-        _lidarRowSegmenter = std::make_shared<HelperLidarRowSegmentation>();
-    }
     // Module for constructing a maximum size plane with 3 points with a given
     // pointcloud
     if (_parameters->do_use_triangle_size_maximation)
@@ -190,7 +189,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
   _points_groundplane.clear();
 
   // Change coordinate frame
-  Transform_Cloud_LidarToCamera(cloud, _transform_lidar_to_cam);
+  Transform_Cloud_LidarToCamera(cloud);
 
   if (_parameters->neighbor_search_mode == 0) {
     // use next pixel neighbor search
@@ -199,8 +198,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
         std::dynamic_pointer_cast<NeighborFinderPixel>(_neighborFinder);
 
     neighborFinder->InitializeLidarProjection(
-        this->_points._points_cs_image_visible, this->_points._points_cs_camera,
-        this->_points._visiblePointIndices);
+        this->_points._points_cs_image);
   } else if (_parameters->neighbor_search_mode == 1) {
     // use kdd tree
     //		auto neighborFinder =
@@ -211,61 +209,18 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
         std::to_string(_parameters->neighbor_search_mode);
   }
 
-  // Do Ransac plane estimation
-  if (_parameters->do_use_ransac_plane) {
-    if (groundPlane == nullptr) {
-      // Initialize ground plane estimator with RANSAC scheme
-      groundPlane = std::make_shared<RansacPlane>(_parameters);
-    }
-
-    // only segment if this wasn't done yet
-    if (!groundPlane->isSegmented()) {
-      groundPlane->CalculateInliersPlane(cloud);
-    }
-
-    // set initial plane for m_estimator (weighted least squares)
-    if (_parameters->plane_estimator_use_mestimator) {
-      auto depthEstimatorWeighted =
-          std::dynamic_pointer_cast<RoadDepthEstimatorMEstimator>(
-              _roadDepthEstimator);
-      const auto planeCoeffs = groundPlane->getModelCoeffs();
-      Eigen::Vector3d planeNormal(planeCoeffs[0], planeCoeffs[1],
-                                  planeCoeffs[2]);
-      auto planeEigen = Eigen::Hyperplane<double, 3>(planeNormal.normalized(),
-                                                     planeCoeffs[3]);
-      depthEstimatorWeighted->setPlanePrior(planeEigen);
-    }
-
-    auto inliers = groundPlane->getInlinersIndex();
-    for (const auto& inlier : inliers) {
-      auto point = Eigen::Vector3d(_points._points_cs_camera(0, inlier),
-                                   _points._points_cs_camera(1, inlier),
-                                   _points._points_cs_camera(2, inlier));
-
-      if (_parameters->ransac_plane_use_camx_treshold) {
-        double treshold = _parameters->ransac_plane_treshold_camx;
-
-        if (fabs(point.x()) <= treshold) _points_groundplane.push_back(point);
-      } else
-        _points_groundplane.push_back(point);
-    }
-  }
-
   Logger::Instance().Log(Logger::MethodEnd, "DepthEstimator::setInputCloud");
 }
 
 void DepthEstimator::getCloudCameraCs(Cloud::Ptr& pointCloud_cam_cs) {
-  int count = _points._points_cs_camera.cols();
+
   pointCloud_cam_cs->clear();
 
-  for (int i = 0; i < count; i++) {
-    double x = _points._points_cs_camera(0, i);
-    double y = _points._points_cs_camera(1, i);
-    double z = _points._points_cs_camera(2, i);
+  for (auto pt : _points._points_cs_camera) {
     pcl::PointXYZI point;
-    point.x = x;
-    point.y = y;
-    point.z = z;
+    point.x = pt.x;
+    point.y = pt.y;
+    point.z = pt.z;
     point.intensity = 1;
 
     pointCloud_cam_cs->points.push_back(point);
@@ -276,8 +231,8 @@ void DepthEstimator::getCloudCameraCs(Cloud::Ptr& pointCloud_cam_cs) {
   pointCloud_cam_cs->is_dense = false;
 }
 
-void DepthEstimator::getCloudNeighbors(Cloud::Ptr& pointCloud_neighbors) {
-  FillCloud(_points_neighbors, pointCloud_neighbors);
+void DepthEstimator::getCloudNeighbors(std::vector<Eigen::Vector2d>& pts) {
+  pts = _points_neighbors;
 }
 
 void DepthEstimator::getCloudInterpolated(Cloud::Ptr& pointCloud_interpolated) {
@@ -346,8 +301,8 @@ void DepthEstimator::CutPointCloud(const Cloud::ConstPtr& cloud_in,
 }
 
 void DepthEstimator::getPointsCloudImageCs(
-    Eigen::Matrix2Xd& visiblePointsImageCs, std::vector<double>& depths) {
-  visiblePointsImageCs = this->_points._points_cs_image_visible;
+    std::vector<cv::Point2f> &visiblePointsImageCs, std::vector<double> &depths) {
+  visiblePointsImageCs = this->_points._points_cs_image;
   for (int i=0;i<_points._visiblePointIndices.size();i++)
   {
     depths.push_back(getPointDepthCamVisible(i));
@@ -467,7 +422,7 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepth(
   }
 
   // Get the neighbor pixels around the given feature point
-  std::vector<int> neighborIndicesCut;
+  std::vector<uint16_t> neighborIndicesCut;
   std::vector<Eigen::Vector3d> neighbors;
   auto result =
       std::make_pair<DepthResultType, double>(DepthResultType::Unspecified, -1);
@@ -478,60 +433,6 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepth(
                                 neighbors, calcStats))
     return std::pair<DepthResultType, double>(
         DepthResultType::RadiusSearchInsufficientPoints, -1);
-
-  // Calculate points using region growing if enabled
-  if (_lidarRowSegmenter != nullptr) {
-    std::cout << "---------------------------> run region growing" << std::endl;
-    // Segment the neighbors due to depth using a histogram
-    std::vector<Eigen::Vector3d> neighborsSegmented;
-    std::vector<int> neighborsSegmentedIndex;
-
-    Eigen::Vector3d nearestPoint;
-    int nearestPointIndex;
-
-    if (!this->CalculateNearestPoint(neighbors, neighborIndicesCut,
-                                     nearestPoint, nearestPointIndex))
-      return std::pair<DepthResultType, double>(
-          DepthResultType::HistogramNoLocalMax, -1);
-
-    // check if in range
-    if (nearestPoint.z() > _parameters->treshold_depth_max)
-      return std::pair<DepthResultType, double>(
-          DepthResultType::TresholdDepthGlobalGreaterMax, -1);
-
-    neighborsSegmented.push_back(nearestPoint);
-    neighborsSegmentedIndex.push_back(nearestPointIndex);
-
-    // Use region growing for further depth segmentation if activated
-    int resultRegionGrowing = CalcDepthSegmentionRegionGrowing(
-        featurePoint_image_cs, neighborsSegmented, neighborsSegmentedIndex);
-
-    // if result is < 0 then region growing failed
-    if (resultRegionGrowing <= 0) {
-      switch (resultRegionGrowing) {
-        case -1:
-          result = std::make_pair<DepthResultType, double>(
-              DepthResultType::RegionGrowingNearestSeedNotAvailable, -1);
-          break;
-        case -2:
-          result = std::make_pair<DepthResultType, double>(
-              DepthResultType::RegionGrowingSeedsOutOfRange, -1);
-          break;
-        case -3:
-          result = std::make_pair<DepthResultType, double>(
-              DepthResultType::RegionGrowingInsufficientPoints, -1);
-          break;
-      }
-    } else {
-      auto result = this->CalculateDepthSegmented(
-          featurePoint_image_cs, neighborsSegmented, calcStats, false);
-
-      if (result.first == DepthResultType::Success) {
-        result.first = DepthResultType::SuccessRegionGrowing;
-        return result;
-      }
-    }
-  }
 
   // Segment the neighbors due to depth using a histogram
   std::vector<Eigen::Vector3d> neighborsSegmented;
@@ -584,37 +485,12 @@ int DepthEstimator::CalcDepthSegmentionRegionGrowing(
     const Eigen::Vector2d& featurePoint_image_cs,
     std::vector<Eigen::Vector3d>& neighborsSegmented,
     std::vector<int>& imgNeighborsSegmentedIndex) {
-  if (_lidarRowSegmenter == NULL) return 0;
-
-  // Find neighbors from the depth segmented points
-  int result = _lidarRowSegmenter->calculateNeighborPoints(
-      _points, featurePoint_image_cs,
-      _parameters->depth_segmentation_max_treshold_gradient,
-      _parameters->depth_segmentation_max_seedpoint_to_seedpoint_distance,
-      _parameters
-          ->depth_segmentation_max_seedpoint_to_seedpoint_distance_gradient,
-      _parameters->depth_segmentation_max_neighbor_to_seedpoint_distance,
-      _parameters
-          ->depth_segmentation_max_neighbor_to_seedpoint_distance_gradient,
-      _parameters->depth_segmentation_max_neighbor_distance,
-      _parameters->depth_segmentation_max_neighbor_distance_gradient,
-      _parameters->depth_segmentation_max_pointcount,
-      imgNeighborsSegmentedIndex);
-
-  neighborsSegmented.clear();
-
-  if (result != 1) return result;
-
-  for (auto index : imgNeighborsSegmentedIndex) {
-    neighborsSegmented.push_back(_points.get3DPointFromCut(index));
-  }
-
-  return 1;
+  return 0;
 }
 
 bool DepthEstimator::CalculateNeighbors(
     const Eigen::Vector2d& featurePoint_image_cs,
-    std::vector<int>& neighborIndicesCut,
+    std::vector<uint16_t>& neighborIndicesCut,
     std::vector<Eigen::Vector3d>& neighbors,
     std::shared_ptr<DepthCalcStatsSinglePoint> calcStats, const float scaleX,
     const float scaleY) {
@@ -622,14 +498,17 @@ bool DepthEstimator::CalculateNeighbors(
 
   // get the indices of the neighbors in the image
   this->_neighborFinder->getNeighbors(
-      featurePoint_image_cs, this->_points._points_cs_camera,
-      this->_points._visiblePointIndices, neighborIndicesCut, calcStats, scaleX, scaleY);
+      featurePoint_image_cs, this->_points._points_cs_camera, neighborIndicesCut, calcStats, scaleX, scaleY);
 
   // get the 3D neighbor points from the pointcloud using the given indices
-  this->_neighborFinder->getNeighbors(this->_points._points_cs_camera,
-                                      this->_points._visiblePointIndices,
-                                      neighborIndicesCut, neighbors);
-
+  this->_neighborFinder->getNeighbors(this->_points._points_cs_camera, neighborIndicesCut, neighbors);
+  // todo: nico for debugging - deactivate at some point
+  for (const auto& point3d : neighbors)
+  {
+      Eigen::Vector2d point2D;
+      if (_camera->getImagePoint(point3d, point2D))
+        _points_neighbors.push_back(point2D);
+  }
   // Debug
   //    #pragma omp critical
   //    {
@@ -655,10 +534,7 @@ bool DepthEstimator::CalculateNeighbors(
   //        }
   //    }
 
-  if (neighbors.size() < (uint)_parameters->radiusSearch_count_min)
-    return false;
-
-  return true;
+  return neighbors.size() >= (uint)_parameters->radiusSearch_count_min;
 }
 
 bool DepthEstimator::CalculateNearestPoint(
@@ -702,7 +578,7 @@ bool DepthEstimator::CalculateNearestPoint(
 
 bool DepthEstimator::CalculateDepthSegmentation(
     const std::vector<Eigen::Vector3d>& neighbors,
-    const std::vector<int>& neighborsIndexCut,
+    const std::vector<uint16_t >& neighborsIndexCut,
     std::vector<Eigen::Vector3d>& pointsSegmented,
     std::vector<int>& pointsSegmentedIndex,
     std::shared_ptr<DepthCalcStatsSinglePoint> calcStats) {
@@ -716,7 +592,7 @@ bool DepthEstimator::CalculateDepthSegmentation(
     Eigen::VectorXd points3dDepth(neighbors.size());
 
     for (uint i = 0; i < neighbors.size(); i++) {
-      double distance = neighbors[i].z();
+      double distance = neighbors[i].norm();
       points3dDepth[i] = std::min(distance, 999.);
     }
 
@@ -754,7 +630,7 @@ bool DepthEstimator::CalculateDepthSegmentation(
 
 bool DepthEstimator::CalculateDepthSegmentationPlane(
     const std::vector<Eigen::Vector3d>& neighbors,
-    const std::vector<int> neighborIndices,
+    const std::vector<uint16_t> neighborIndices,
     std::vector<Eigen::Vector3d>& pointsSegmented,
     std::shared_ptr<DepthCalcStatsSinglePoint> calcStats,
     GroundPlane::Ptr ransacPlane) {
@@ -1051,55 +927,76 @@ void DepthEstimator::LogDepthCalcStats(const DepthResultType depthResult) {
   }
 }
 
-void DepthEstimator::Transform_Cloud_LidarToCamera(
-    const Cloud::ConstPtr& cloud_lidar_cs,
-    const Eigen::Affine3d& lidar_to_cam) {
+void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_lidar_cs) {
+
+  std::cout << "\nnumber of points: " << cloud_lidar_cs->width << "\n";
+
   Logger::Instance().Log(Logger::MethodStart,
                          "DepthEstimator::Transform_Cloud_LidarToCamera");
 
   using namespace std;
 
   // todo: there is a LOT of potential for saving time & memory here
+  Logger::Instance().Log(Logger::MethodStart,
+                         "DepthEstimator::Transform_Cloud_LidarToCamera::Map");
 
-  // Convert cloud to Eigen-Format
-  // Eigen::MatrixXf pointcloud_eigen{cloud_lidar_cs->getMatrixXfMap()};
-  _points._points_cs_lidar =
-      cloud_lidar_cs->getMatrixXfMap().cast<double>().topRows<3>();
-  int pointCount = _points._points_cs_lidar.cols();
-
-  // Transform cloud into camera frame
-  _points._points_cs_camera = lidar_to_cam * _points._points_cs_lidar;
-
-  // Project cloud from camera cs into image cs
-  _points._points_cs_image.resize(2, pointCount);
-
-  _points._pointsInImgRange = _camera->getImagePoints(_points._points_cs_camera,
-                                                      _points._points_cs_image);
-  int pointCountImgVisible = (_points._pointsInImgRange == true).count();
-
-  // create data which just stores visible points (in image cs)
-  _points._points_cs_image_visible.resize(2, pointCountImgVisible);
-
-  int visibleIndex = 0;
-  _points._visiblePointIndices.clear();
-
-  for (int i = 0; i < pointCount; i++) {
-    if (_points._pointsInImgRange[i]) {
-      _points._points_cs_image_visible(0, visibleIndex) =
-          _points._points_cs_image(0, i);
-      _points._points_cs_image_visible(1, visibleIndex) =
-          _points._points_cs_image(1, i);
-      _points._visiblePointIndices.push_back(i);
-      visibleIndex++;
-    }
+  _points._points_cs_camera.reserve(cloud_lidar_cs->width);
+  for (auto pt : *cloud_lidar_cs)
+  {
+    cv::Point3f p(pt.x,pt.y,pt.z);
+    _points._points_cs_camera.push_back(p);
   }
 
-  if (_lidarRowSegmenter != NULL)
-    _lidarRowSegmenter->SegmentPoints(_points._points_cs_image_visible);
+  Logger::Instance().Log(Logger::MethodEnd,
+                         "DepthEstimator::Transform_Cloud_LidarToCamera::Map");
+
+  cv::Mat_<float> K(3, 3);
+  K << 395, 0, 375,
+  0, 395, 239,
+  0, 0, 1;
+
+  cv::Mat_<float> d(4, 1);
+  d << -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
+
+  cv::Mat_<float> r(3,1);
+  r << 0,0,0;
+
+  Logger::Instance().Log(Logger::MethodStart,
+                         "DepthEstimator::Transform_Cloud_LidarToCamera::CamstuffCV");
+
+  cv::projectPoints(_points._points_cs_camera, r, r, K, d,  _points._points_cs_image);
+
+  Logger::Instance().Log(Logger::MethodEnd,
+                         "DepthEstimator::Transform_Cloud_LidarToCamera::CamstuffCV");
+
+  Logger::Instance().Log(Logger::MethodStart,
+                         "DepthEstimator::Transform_Cloud_LidarToCamera::AssignmentShit");
+
+  bool removalTracker[_points._points_cs_image.size()];
+  int i = 0;
+  _points._points_cs_image.erase(
+      std::remove_if(_points._points_cs_image.begin(), _points._points_cs_image.end(),
+          [this, &i, &removalTracker](const cv::Point2f& pt) {
+        i++;
+        if (pt.x < 0 || pt.x >= _imgWitdh || pt.y < 0 || pt.y >= _imgHeight) {
+            removalTracker[i] = true;
+            return true;
+          }
+          return false;}),
+          _points._points_cs_image.end());
+  int j = 0;
+  _points._points_cs_camera.erase(
+      std::remove_if(_points._points_cs_camera.begin(), _points._points_cs_camera.end(),
+          [&removalTracker, &j](const cv::Point3f& pt){j++;return removalTracker[j];}),
+          _points._points_cs_camera.end());
+
+  Logger::Instance().Log(Logger::MethodEnd,
+                         "DepthEstimator::Transform_Cloud_LidarToCamera::AssignmentShit");
 
   // Debug info
   Logger::Instance().Log(Logger::MethodEnd,
                          "DepthEstimator::Transform_Cloud_LidarToCamera");
+  std::cout << "\nafter removal: " << _points._points_cs_image.size() << "\n";
 }
 
 } /* namespace lidorb_ros_tool */

@@ -29,4 +29,29 @@ enum DepthResultType {
     RegionGrowingInsufficientPoints = 19,
     SuccessRegionGrowing = 20
 };
+
+static const char * DepthResultTypeStrings[] {"Unspecified",
+    "Success",
+    "RadiusSearchInsufficientPoints",
+    "HistogramNoLocalMax",
+    "TresholdDepthGlobalGreaterMax",
+    "TresholdDepthGlobalSmallerMin",
+    "TresholdDepthLocalGreaterMax",
+    "TresholdDepthLocalSmallerMin",
+    "TriangleNotPlanar",
+    "TriangleNotPlanarInsufficientPoints",
+    "CornerBehindCamera",
+    "PlaneViewrayNotOrthogonal",
+    "PcaIsPoint",
+    "PcaIsLine",
+    "PcaIsCubic",
+    "InsufficientRoadPoints",
+    "SuccessRoad",
+    "RegionGrowingNearestSeedNotAvailable",
+    "RegionGrowingSeedsOutOfRange",
+    "RegionGrowingInsufficientPoints",
+    "SuccessRegionGrowing"};
+
+static const char * getTextForDepthResultType(int enumValue) { return DepthResultTypeStrings[enumValue]; }
+
 }

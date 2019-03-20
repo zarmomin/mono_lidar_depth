@@ -49,7 +49,6 @@ src/DepthCalculationStatistics.cpp
 src/DepthEstimator.cpp
 src/DepthEstimatorParameters.cpp
 src/GeometryHelper.cpp
-src/HelperLidarRowSegmentation.cpp
 src/Histogram.cpp
 src/HistogramPointDepth.cpp
 src/LinePlaneIntersectionBase.cpp
