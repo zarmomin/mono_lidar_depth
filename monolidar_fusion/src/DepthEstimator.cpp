@@ -376,6 +376,20 @@ void DepthEstimator::CalculateDepth(
     auto depthPair = this->CalculateDepth(imgPoint, ransacPlane, stats);
     points_depths(i) = depthPair.second;
     resultType(i) = depthPair.first;
+
+    if (depthPair.first != DepthResultType::Success || depthPair.second < 0)
+    {
+      std::cout << "\n" << i  << "th feature w/ result " << depthPair.first << "\n";
+
+      for (auto pt : stats->_neighbors3d)
+      {
+        std::cout << "\nneigbor " << std::get<0>(pt) << ", " << std::get<1>(pt) << ", "<< std::get<2>(pt);
+      }
+      /*for (auto pt : stats->_neighbors2d)
+      {
+        std::cout << "\nneigbor " << pt.first << ", " << pt.second;
+      }*/
+    }
     //        #pragma omp critical
     //        {
     //            LogDepthCalcStats(depthPair.first);
@@ -432,7 +446,6 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepth(
     result = std::pair<DepthResultType, double>(
         DepthResultType::HistogramNoLocalMax, -1);
   }
-
   // Calculate depth
   bool checkPlanar = _checkPlanarTriangle != NULL;
   if (result.first != DepthResultType::HistogramNoLocalMax) {
@@ -698,30 +711,24 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
   using namespace std;
 
   // Get the spanning triangle from lidar points
-  Eigen::Vector3d corner1;
-  Eigen::Vector3d corner2;
-  Eigen::Vector3d corner3;
+  int corner1 = 0; int corner2 = 1; int corner3 = 2;
 
   if (!_parameters->do_use_PCA && (this->_planeCalcMaxSpanning != nullptr)) {
     if (!this->_planeCalcMaxSpanning->CalculatePlaneCorners(
-            pointsSegmented, corner1, corner2, corner3,
-            _points_triangle_corners))
+            pointsSegmented, corner1, corner2, corner3))
       return std::pair<DepthResultType, double>(
           DepthResultType::TriangleNotPlanarInsufficientPoints, -1);
   } else {
     if (pointsSegmented.size() < 3)
       return std::pair<DepthResultType, double>(
           DepthResultType::HistogramNoLocalMax, -1);
-
-    corner1 = pointsSegmented[0];
-    corner2 = pointsSegmented[1];
-    corner3 = pointsSegmented[2];
   }
 
   if (!_parameters->do_use_PCA && (_checkPlanarTriangle != nullptr)) {
-    if (!_checkPlanarTriangle->CheckPlanar(corner1, corner2, corner3))
+    if (!_checkPlanarTriangle->CheckPlanar(pointsSegmented[corner1], pointsSegmented[corner2], pointsSegmented[corner3])) {
       return std::pair<DepthResultType, double>(
           DepthResultType::TriangleNotPlanar, -1);
+    }
   }
 
   // get the depth of the feature point
@@ -794,7 +801,7 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
           DepthResultType::PlaneViewrayNotOrthogonal, -1);
   } else {
     if (!_linePlaneIntersection->GetIntersectionDistance(
-            corner1, corner2, corner3, viewingRaySupportPoint,
+        pointsSegmented[corner1], pointsSegmented[corner2], pointsSegmented[corner3], viewingRaySupportPoint,
             viewingRayDirection, depth))
       return std::pair<DepthResultType, double>(
           DepthResultType::PlaneViewrayNotOrthogonal, -1);

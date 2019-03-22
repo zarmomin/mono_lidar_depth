@@ -33,15 +33,13 @@ public:
      * @param corner3 [out] corner 3 of the biggest spanning triangle
      */
     bool CalculatePlaneCorners(const std::vector<Eigen::Vector3d>& points,
-                               Eigen::Vector3d& corner1,
-                               Eigen::Vector3d& corner2,
-                               Eigen::Vector3d& corner3);
+                               int& corner1,
+                               int& corner2,
+                               int& corner3);
 
-    bool CalculatePlaneCorners(const std::vector<Eigen::Vector3d>& points,
-                               Eigen::Vector3d& corner1,
-                               Eigen::Vector3d& corner2,
-                               Eigen::Vector3d& corner3,
-                               std::vector<Eigen::Vector3d>& publishPointList);
+    double area(int a, int b, int c, const std::vector<Eigen::Vector3d>& list);
+
+    double area(const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c);
 
 private:
     double _distTreshold;

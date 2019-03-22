@@ -27,9 +27,7 @@ std::pair<DepthResultType, double> RoadDepthEstimatorMaxSpanningTriangle::Calcul
     const std::vector<Eigen::Vector3d>& planePoints,
     Eigen::Vector3d& pointiNtersection) {
     // Get the spanning triangle from lidar points
-    Eigen::Vector3d corner1;
-    Eigen::Vector3d corner2;
-    Eigen::Vector3d corner3;
+    int corner1, corner2, corner3;
 
     // Find the 3 corners which describes a plane
     if (!_planeEstimation->CalculatePlaneCorners(planePoints, corner1, corner2, corner3))
@@ -51,7 +49,7 @@ std::pair<DepthResultType, double> RoadDepthEstimatorMaxSpanningTriangle::Calcul
 
     // Caclculate the intersection between camera raytrace and the plane
     _linePlaneIntersection->GetIntersectionPoint(
-        corner1, corner2, corner3, viewingRayDirection, viewingRaySupportPoint, pointiNtersection, depth);
+        planePoints[corner1],  planePoints[corner2],  planePoints[corner3], viewingRayDirection, viewingRaySupportPoint, pointiNtersection, depth);
 
     // Check for global tresholds
     if (this->_tresholdDepthGlobal != NULL) {
