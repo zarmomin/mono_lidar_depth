@@ -161,16 +161,9 @@ TEST(Interface, complete_run)
     std::srand(42);
     std::shared_ptr<CameraPinhole> cam;
     cam = std::make_shared<CameraPinhole>(img_width, img_height, cam_f, cam_p_u, cam_p_v);
-    // upright CS to left-down camera CS
-    Eigen::Affine3d l2c;
-    l2c.matrix() << 0, -1, 0, 0,
-                    0, 0, -1, 0,
-                    1, 0, 0, 0,
-                    0, 0, 0, 1;
-    Eigen::Vector3d tmp = l2c * Eigen::Vector3d(5,1,2);
     Mono_Lidar::DepthEstimator depthEstimator;
     depthEstimator.InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
-    depthEstimator.Initialize(cam, l2c);
+    depthEstimator.Initialize(cam);
 
     // generate camera points
     const int point_count = 50;
@@ -203,11 +196,10 @@ TEST(Interface, complete_run)
     for (double y = points_min_y; y < points_max_y; y += points_delta_y) {
         for (double x = points_max_x; x > points_min_x; x -= points_delta_x) {
             for (double z = points_min_z; z < points_max_z; z+=points_delta_z) {
-                Eigen::Vector3d v = l2c * Eigen::Vector3d(x,y,z);
                 pcl::PointXYZI pt(intensity);
-                pt.x = v[0];
-                pt.y = v[1];
-                pt.z = v[2];
+                pt.x = -y;
+                pt.y = -z;
+                pt.z = x;
                 pointcloud.push_back(pt);
             }
         }
@@ -230,15 +222,13 @@ TEST(Interface, complete_run2)
     const double cam_p_v = 239;
     const double cam_f = 395;
     std::srand(42);
-    Eigen::Quaterniond q(0.5, 0.5, -0.5, 0.5);
-    Eigen::Vector3d r(0,0,0);
     Eigen::Matrix3d intrinsics = Eigen::Matrix3d::Identity();
     intrinsics(0, 0) = intrinsics(1, 1) = cam_f;
     intrinsics(0, 2) = cam_p_u;
     intrinsics(1, 2) = cam_p_v;
     std::shared_ptr<Mono_Lidar::DepthEstimator> depthEstimator = std::make_shared<Mono_Lidar::DepthEstimator>();
     depthEstimator->InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
-    depthEstimator->Initialize(r,q,intrinsics);
+    depthEstimator->Initialize(intrinsics);
 
     // generate camera points
     const int point_count = 50;
@@ -292,15 +282,13 @@ TEST(Interface, visiblePointRetrieval)
   const double cam_p_v = 239;
   const double cam_f = 395;
   std::srand(42);
-  Eigen::Quaterniond q(0.5, 0.5, -0.5, 0.5);
-  Eigen::Vector3d r(0,0,0);
   Eigen::Matrix3d intrinsics = Eigen::Matrix3d::Identity();
   intrinsics(0, 0) = intrinsics(1, 1) = cam_f;
   intrinsics(0, 2) = cam_p_u;
   intrinsics(1, 2) = cam_p_v;
   std::shared_ptr<Mono_Lidar::DepthEstimator> depthEstimator = std::make_shared<Mono_Lidar::DepthEstimator>();
   depthEstimator->InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
-  depthEstimator->Initialize(r,q,intrinsics);
+  depthEstimator->Initialize(intrinsics);
 
   // generate camera points
   const int point_count = 50;

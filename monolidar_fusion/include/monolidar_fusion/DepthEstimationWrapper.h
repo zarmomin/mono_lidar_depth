@@ -27,14 +27,12 @@ class DepthEstimationWrapper{
 
   DepthEstimationWrapper() : plane_placeholder(nullptr) {
     feature_point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-    Eigen::Quaterniond q(1, 0, 0, 0);
-    Eigen::Vector3d r(0,0,0);
     Eigen::Matrix3d intrinsics;
     intrinsics << 395.872620767, 0.0, 372.495185619,
         0.0, 395.786208753, 214.319312646,
         0.0, 0.0, 1.0;
     depth_estimator.InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
-    depth_estimator.Initialize(r, q, intrinsics);
+    depth_estimator.Initialize(intrinsics);
     //image_time = -1;
     lidar_time = -2;
     feature_time = -3;

@@ -66,10 +66,10 @@ public:
      * @param camera Intrinsic camera parameters
      * @param transform_lidar_to_cam Pose of the camera in lidar coordinates
      */
-    bool Initialize(const std::shared_ptr<CameraPinhole>& camera, const Eigen::Affine3d& transform_lidar_to_cam);
+    bool Initialize(const std::shared_ptr<CameraPinhole>& camera);
 
 
-    bool Initialize(const Eigen::Vector3d& BrBC, const Eigen::Quaterniond& qBC, const Eigen::Matrix3d& K);
+    bool Initialize(const Eigen::Matrix3d& K);
 
     /*
      * Initializes the parameters from a config file. Must be called before class usuage.
@@ -103,13 +103,6 @@ public:
      */
     std::shared_ptr<CameraPinhole> getCamera() {
         return _camera;
-    }
-
-    /*
-     * Gets the pose of the camera in lidar coordinates as an affine transformation
-     */
-    Eigen::Affine3d getTransformLidarToCam() {
-        return _transform_lidar_to_cam;
     }
 
     double getPointDepthCamVisible(int loopCountIndex) {
@@ -353,8 +346,6 @@ private:
     bool _debugMode = false;
     std::shared_ptr<DepthEstimatorParameters> _parameters;
     std::shared_ptr<CameraPinhole> _camera;
-    Eigen::Affine3d _transform_lidar_to_cam; // transformation to switch points from lidar frame into cam frame
-    Eigen::Affine3d _transform_cam_to_lidar; // inverse of _transform_lidar_to_cam
     std::ofstream _debugFile;
     DepthCalculationStatistics _depthCalcStats;
 

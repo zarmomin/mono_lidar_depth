@@ -7,8 +7,8 @@
 
 #include "monolidar_fusion/NeighborFinderPixel.h"
 #include "monolidar_fusion/Logger.h"
-#include <opencv2/highgui.hpp>
-
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 namespace Mono_Lidar {
 
@@ -36,9 +36,8 @@ void NeighborFinderPixel::InitializeLidarProjection(const std::vector<cv::Point2
     {
         const cv::Point2f pt = lidarPoints_image_cs[i];
         _img_points_lidar.at<uint16_t>(pt) = i;
+        //coloredImage.at<cv::Vec3b>(pt) = cv::Vec3b(255,255,255);
     }
-    cv::imshow("tmp", _img_points_lidar);
-    cv::waitKey(0);
     Logger::Instance().Log(Logger::MethodEnd, "DepthEstimator::TransformLidarPointsToImageFrame");
 }
 
@@ -58,8 +57,7 @@ void NeighborFinderPixel::getNeighbors(const Eigen::Vector2d &featurePoint_image
 
     for (int i = static_cast<int>(topEdgeY); i <= static_cast<int>(bottomEdgeY); i++) {
         for (int j = static_cast<int>(leftEdgeX); j <= static_cast<int>(rightEdgeX); j++) {
-            cv::Point2f pt(i,j);
-            uint16_t index = _img_points_lidar.at<uint16_t>(j, i);
+            uint16_t index = _img_points_lidar.at<uint16_t>(i, j);
             if (index > 0u) {
                 pcIndicesCut.push_back(index);
             }

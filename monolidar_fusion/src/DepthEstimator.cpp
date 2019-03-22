@@ -32,33 +32,21 @@
 #include <chrono>
 #include <opencv2/core/types.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
 
 namespace Mono_Lidar {
 
-bool DepthEstimator::Initialize(const Eigen::Vector3d& BrBC,
-                                const Eigen::Quaterniond& qBC,
-                                const Eigen::Matrix3d& K) {
+bool DepthEstimator::Initialize(const Eigen::Matrix3d& K) {
   _camera = std::make_shared<CameraPinhole>(_imgWitdh, _imgHeight, K);
-  _transform_lidar_to_cam = Eigen::Affine3d::Identity();
-  _transform_lidar_to_cam.translation() = BrBC;
-  _transform_lidar_to_cam.linear() = qBC.toRotationMatrix();
-  _transform_cam_to_lidar = _transform_lidar_to_cam.inverse();
   return true;
-  //return InitializeParameters();
 }
 
-bool DepthEstimator::Initialize(const std::shared_ptr<CameraPinhole>& camera,
-                                const Eigen::Affine3d& transform_lidar_to_cam) {
+bool DepthEstimator::Initialize(const std::shared_ptr<CameraPinhole>& camera) {
   if (!_isInitializedConfig) {
     throw "Call 'InitConfig' before calling 'Initialize'.";
   }
   _camera = camera;
-  //_camera->getImageSize(_imgWitdh, _imgHeight);
-  _transform_lidar_to_cam = Eigen::Affine3d::Identity();
-  _transform_cam_to_lidar = Eigen::Affine3d::Identity();
-  _transform_lidar_to_cam = transform_lidar_to_cam;
-  _transform_cam_to_lidar = _transform_lidar_to_cam.inverse();
-  //return InitializeParameters();
   return true;
 }
 
@@ -502,37 +490,6 @@ bool DepthEstimator::CalculateNeighbors(
 
   // get the 3D neighbor points from the pointcloud using the given indices
   this->_neighborFinder->getNeighbors(this->_points._points_cs_camera, neighborIndicesCut, neighbors);
-  // todo: nico for debugging - deactivate at some point
-  for (const auto& point3d : neighbors)
-  {
-      Eigen::Vector2d point2D;
-      if (_camera->getImagePoint(point3d, point2D))
-        _points_neighbors.push_back(point2D);
-  }
-  // Debug
-  //    #pragma omp critical
-  //    {
-  //        if (_parameters->do_publish_points)
-  //        {
-  //            for (uint i = 0; i < neighbors.size(); i++)
-  //                this->_points_neighbors.push_back(neighbors[i]);
-  //        }
-
-  //        // Debug log neighbors
-  //        if (calcStats != NULL)
-  //        {
-  //            for (const auto& point3d : neighbors)
-  //            {
-  //                calcStats->_neighbors3d.push_back(std::tuple<float, float,
-  //                float>(point3d.x(), point3d.y(),
-  //                point3d.z()));
-  //                Eigen::Vector2d point2D;
-  //                _camera->getImagePoint(point3d, point2D);
-  //                calcStats->_neighbors2d.push_back(std::pair<float,
-  //                float>(point2D.x(), point2D.y()));
-  //            }
-  //        }
-  //    }
 
   return neighbors.size() >= (uint)_parameters->radiusSearch_count_min;
 }
@@ -548,10 +505,6 @@ bool DepthEstimator::CalculateNearestPoint(
     double distance = neighbors[i].z();
     points3dDepth[i] = distance;
   }
-
-  // bool pointFound =PointHistogram::GetNearestPoint(neighbors,
-  // neighborsIndexCut, points3dDepth,
-  //		pointsSegmented, pointsSegmentedIndex);
 
   float minDepth = std::numeric_limits<double>::max();
   int minIndex = -1;
@@ -610,21 +563,6 @@ bool DepthEstimator::CalculateDepthSegmentation(
     pointsSegmented = neighbors;
   }
 
-  // Debug log segmented points
-  //	if (calcStats != NULL)
-  //	{
-  //	    for (const auto& point3d : pointsSegmented)
-  //	    {
-  //	    	calcStats->_pointsSegmented3d.push_back(std::tuple<float, float,
-  //float>(point3d.x(), point3d.y(),
-  // point3d.z()));
-  //	    	Eigen::Vector2d point2D;
-  //	    	_camera->getImagePoint(point3d, point2D);
-  //	    	calcStats->_pointsSegmented2d.push_back(std::pair<float,
-  //float>(point2D.x(), point2D.y()));
-  //	    }
-  //	}
-
   return true;
 }
 
@@ -659,7 +597,7 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
     // The indizes of the ransac plane are based on the original cloud
     int inidexRaw = _points._visiblePointIndices[index];
 
-    Eigen::Vector3d point_lidar_cs = _transform_cam_to_lidar * neighbors[i];
+    Eigen::Vector3d point_lidar_cs = neighbors[i];
     pcl::PointXYZ point(point_lidar_cs.x(), point_lidar_cs.y(),
                         point_lidar_cs.z());
     double distance = pcl::pointToPlaneDistance(point, planeCoeffs);
@@ -806,7 +744,7 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
       pointCloud(2, i) = pointsSegmented[i].z();
     }
 
-    // analyse the ointcloud using pca
+    // analyse the pointcloud using pca
     auto pca = Mono_LidarPipeline::PCA(_parameters, pointCloud);
     auto pcaResult = pca.getResult();
 
@@ -928,9 +866,6 @@ void DepthEstimator::LogDepthCalcStats(const DepthResultType depthResult) {
 }
 
 void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_lidar_cs) {
-
-  std::cout << "\nnumber of points: " << cloud_lidar_cs->width << "\n";
-
   Logger::Instance().Log(Logger::MethodStart,
                          "DepthEstimator::Transform_Cloud_LidarToCamera");
 
@@ -956,8 +891,8 @@ void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_
   0, 0, 1;
 
   cv::Mat_<float> d(4, 1);
-  d << -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
-
+  //d << -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
+  d << 0,0,0,0;
   cv::Mat_<float> r(3,1);
   r << 0,0,0;
 
@@ -996,7 +931,6 @@ void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_
   // Debug info
   Logger::Instance().Log(Logger::MethodEnd,
                          "DepthEstimator::Transform_Cloud_LidarToCamera");
-  std::cout << "\nafter removal: " << _points._points_cs_image.size() << "\n";
 }
 
 } /* namespace lidorb_ros_tool */
