@@ -222,7 +222,7 @@ void DepthEstimator::getCloudCameraCs(Cloud::Ptr& pointCloud_cam_cs) {
   pointCloud_cam_cs->is_dense = false;
 }
 
-void DepthEstimator::getCloudNeighbors(std::vector<Eigen::Vector2d>& pts) {
+void DepthEstimator::getCloudNeighbors(std::vector<cv::Point2f>& pts) {
   pts = _points_neighbors;
 }
 
@@ -294,7 +294,7 @@ void DepthEstimator::CutPointCloud(const Cloud::ConstPtr& cloud_in,
 void DepthEstimator::getPointsCloudImageCs(
     std::vector<cv::Point2f> &visiblePointsImageCs, std::vector<double> &depths) {
   visiblePointsImageCs = this->_points._points_cs_image;
-  for (int i=0;i<_points._visiblePointIndices.size();i++)
+  for (int i=0;i<visiblePointsImageCs.size();i++)
   {
     depths.push_back(getPointDepthCamVisible(i));
   }
@@ -489,6 +489,16 @@ bool DepthEstimator::CalculateNeighbors(
   // get the indices of the neighbors in the image
   this->_neighborFinder->getNeighbors(
       featurePoint_image_cs, this->_points._points_cs_camera, neighborIndicesCut, calcStats, scaleX, scaleY);
+  //std::vector<cv::Point> neighborsDirectly;
+  //this->_neighborFinder->getNeighbors(featurePoint_image_cs, this->_points._points_cs_camera, neighborIndicesCut, neighborsDirectly);
+
+  // todo: remove when debugging is done
+  if (_parameters->do_logging) {
+    for (int i=0;i<neighborIndicesCut.size();i++) {
+      cv::Point pt = this->_points._points_cs_image[neighborIndicesCut[i]];
+      this->_points_neighbors.push_back(this->_points._points_cs_image[neighborIndicesCut[i]]);
+    }
+  }
 
   // get the 3D neighbor points from the pointcloud using the given indices
   this->_neighborFinder->getNeighbors(this->_points._points_cs_camera, neighborIndicesCut, neighbors);
@@ -595,10 +605,6 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
   for (size_t i = 0; i < neighbors.size(); i++) {
     int index = neighborIndices[i];
 
-    // Map the index from the visible pointcloud to the original lidar cloud
-    // The indizes of the ransac plane are based on the original cloud
-    int inidexRaw = _points._visiblePointIndices[index];
-
     Eigen::Vector3d point_lidar_cs = neighbors[i];
     pcl::PointXYZ point(point_lidar_cs.x(), point_lidar_cs.y(),
                         point_lidar_cs.z());
@@ -606,7 +612,7 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
 
     if (distance > treshold) return false;
 
-    if (ransacPlane->CheckPointInPlane(inidexRaw)) {
+    if (ransacPlane->CheckPointInPlane(index)) {
       // use treshold
       pointsSegmented.push_back(neighbors[i]);
 
@@ -904,21 +910,22 @@ void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_
                          "DepthEstimator::Transform_Cloud_LidarToCamera::AssignmentShit");
 
   bool removalTracker[_points._points_cs_image.size()];
-  int i = 0;
+  int i=0;
+  for (auto pt : _points._points_cs_image)
+  {
+    if (pt.x < 0 || pt.x >= _imgWitdh || pt.y < 0 || pt.y >= _imgHeight)
+      removalTracker[i] = true;
+    i++;
+  }
+  int j = -1;
   _points._points_cs_image.erase(
       std::remove_if(_points._points_cs_image.begin(), _points._points_cs_image.end(),
-          [this, &i, &removalTracker](const cv::Point2f& pt) {
-        i++;
-        if (pt.x < 0 || pt.x >= _imgWitdh || pt.y < 0 || pt.y >= _imgHeight) {
-            removalTracker[i] = true;
-            return true;
-          }
-          return false;}),
+          [this, &j, &removalTracker](const cv::Point2f& pt) {j++;return removalTracker[j];}),
           _points._points_cs_image.end());
-  int j = 0;
+  int k = -1;
   _points._points_cs_camera.erase(
       std::remove_if(_points._points_cs_camera.begin(), _points._points_cs_camera.end(),
-          [&removalTracker, &j](const cv::Point3f& pt){j++;return removalTracker[j];}),
+          [&removalTracker, &k](const cv::Point3f& pt){k++;return removalTracker[k];}),
           _points._points_cs_camera.end());
 
   Logger::Instance().Log(Logger::MethodEnd,

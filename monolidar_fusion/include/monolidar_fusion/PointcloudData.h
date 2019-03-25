@@ -19,10 +19,6 @@ public:
     std::vector<cv::Point3f> _points_cs_camera; // lidar points in camera-coordinates
     std::vector<cv::Point2f> _points_cs_image; // lidar points in image coordinates
 
-    /// list of indices of points which are visible in the image (used for projection from the cut pointcloud
-    /// (points from pointcloud which are visible in the image frame) into the original pointcloud)
-    std::vector<int> _visiblePointIndices;
-
     PointcloudData() {
     }
 

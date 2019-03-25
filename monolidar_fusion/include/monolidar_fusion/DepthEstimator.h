@@ -106,8 +106,7 @@ public:
     }
 
     double getPointDepthCamVisible(int loopCountIndex) {
-      int properIndex = _points._visiblePointIndices[loopCountIndex];
-      return norm(_points._points_cs_camera[properIndex]);
+      return norm(_points._points_cs_camera[loopCountIndex]);
     }
 
     /*
@@ -128,7 +127,7 @@ public:
     /*
      * Returns a point cloud containing all points which were found by the neirest neighbors search
      */
-    void getCloudNeighbors(std::vector<Eigen::Vector2d>& pts);
+    void getCloudNeighbors(std::vector<cv::Point2f>& pts);
 
     /*
      * Returns a point cloud which contains all corner points of the triangles used for point interpolation/depth
@@ -329,7 +328,7 @@ private:
                                                              // triangle image plane from he ground plane
     std::vector<Eigen::Vector3d>
         _points_triangle_corners; // list of triangle corners (lidar points) spanning a local patch for a feature point
-    std::vector<Eigen::Vector2d> _points_neighbors;   // list of points of all found neighbor points
+    std::vector<cv::Point2f> _points_neighbors;   // list of points of all found neighbor points
     std::vector<Eigen::Vector3d> _points_groundplane; // list of points which are estimated as ground plane
 
     // Following objects are the modules used for depth estimation

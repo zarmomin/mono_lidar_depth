@@ -3,7 +3,7 @@
   <arg name="just_play" value="False"/>
   <param name="use_sim_time" value="true" />
   <node if="$(arg just_play)" pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause /home/nico/datasets/eschlikon/eschlinkon-rovio-features.bag"/>
-  <node pkg="monolidar_fusion" type="monolidar_fusion_node" name="fusion_node" output="screen" launch-prefix="valgrind --tool=callgrind --callgrind-out-file='callgrind.fusion.%p' ">
-    <param name="rosbag_filename" value="/home/nico/datasets/eschlikon/eschlinkon-rovio-features.bag"/>
+  <node pkg="monolidar_fusion" type="monolidar_fusion_node" name="fusion_node" output="screen">
+    <param name="rosbag_filename" value="/home/nico/datasets/eschlikon/pointclouds_2019-03-25-10-40-29.bag"/>
   </node>
 </launch>

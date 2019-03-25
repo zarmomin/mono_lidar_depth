@@ -41,7 +41,7 @@ void handleFeatureCloudMessage(const sensor_msgs::PointCloud2ConstPtr &featureCl
   wrapper.assignValuesFromFeatureCloud();
 }
 
-/*void imgCallback(const sensor_msgs::ImageConstPtr & img){
+void imgCallback(const sensor_msgs::ImageConstPtr & img){
   // Get image from msg
   cv_bridge::CvImagePtr cv_ptr;
   try {
@@ -53,7 +53,7 @@ void handleFeatureCloudMessage(const sensor_msgs::PointCloud2ConstPtr &featureCl
   std::lock_guard<std::mutex> lock(m_wrapper);
   cv_ptr->image.copyTo(wrapper.image);
   wrapper.image_time = img->header.stamp.toSec();
-}*/
+}
 
 /** Main node entry point. */
 int main(int argc, char **argv)
@@ -90,10 +90,10 @@ int main(int argc, char **argv)
       sensor_msgs::PointCloud2::ConstPtr feature_msg = it->instantiate<sensor_msgs::PointCloud2>();
       if (feature_msg != NULL) handleFeatureCloudMessage(feature_msg);
     }
-    /*else if(it->getTopic() == image_topic_name){
+    else if(it->getTopic() == image_topic_name){
       sensor_msgs::ImageConstPtr imgMsg = it->instantiate<sensor_msgs::Image>();
       if (imgMsg != NULL) imgCallback(imgMsg);
-    }*/
+    }
     else if(it->getTopic() == lidar_topic_name){
       sensor_msgs::PointCloud2::ConstPtr lidar_msg = it->instantiate<sensor_msgs::PointCloud2>();
       if (lidar_msg != NULL) handleCloudMessage(lidar_msg);

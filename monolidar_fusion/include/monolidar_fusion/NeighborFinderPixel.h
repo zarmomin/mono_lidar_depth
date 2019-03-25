@@ -31,6 +31,12 @@ public:
                       const std::shared_ptr<DepthCalcStatsSinglePoint> &calcStats = NULL,
                       const float scaleWidth = 1,
                       const float scaleHeight = 1) override;
+
+    void getNeighbors(const Eigen::Vector2d &featurePoint_image_cs,
+                                const std::vector<cv::Point3f> &points_cs_camera,
+                                std::vector<uint16_t> &pcIndicesRaw,
+                                std::vector<cv::Point> &neighborPoints) override;
+
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
     cv::Mat _img_points_lidar; // Matrix with dim (imgWitdh*imgHeight). Each pixels stores a index of a

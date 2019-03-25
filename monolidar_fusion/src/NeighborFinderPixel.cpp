@@ -30,13 +30,13 @@ void NeighborFinderPixel::Initialize(std::shared_ptr<DepthEstimatorParameters>& 
 
 void NeighborFinderPixel::InitializeLidarProjection(const std::vector<cv::Point2f> &lidarPoints_image_cs) {
     Logger::Instance().Log(Logger::MethodStart, "DepthEstimator::TransformLidarPointsToImageFrame");
-
+    _img_points_lidar = cv::Mat::zeros(_imgHeight, _imgWitdth, CV_16U);
     // todo: nico this currently rejects the upper left corner pixel
     for (uint16_t i=0; i < lidarPoints_image_cs.size();i++)
     {
         const cv::Point2f pt = lidarPoints_image_cs[i];
         _img_points_lidar.at<uint16_t>(pt) = i;
-        //coloredImage.at<cv::Vec3b>(pt) = cv::Vec3b(255,255,255);
+
     }
     Logger::Instance().Log(Logger::MethodEnd, "DepthEstimator::TransformLidarPointsToImageFrame");
 }
@@ -75,4 +75,29 @@ void NeighborFinderPixel::getNeighbors(const Eigen::Vector2d &featurePoint_image
         calcStats->_searchRectBottomRight = std::pair<int, int>((int)rightEdgeX, (int)bottomEdgeY);
     }
 }
+
+void NeighborFinderPixel::getNeighbors(const Eigen::Vector2d &featurePoint_image_cs,
+                  const std::vector<cv::Point3f> &points_cs_camera,
+                  std::vector<uint16_t> &pcIndicesRaw,
+                  std::vector<cv::Point> &neighborPoints){
+    double halfSizeX = static_cast<double>(_pixelSearchWidth) * 0.5;
+    double halfSizeY = static_cast<double>(_pixelSearchHeight) * 0.5;
+
+    double leftEdgeX = std::max(featurePoint_image_cs[0] - halfSizeX, 0.);
+    double rightEdgeX = std::min(featurePoint_image_cs[0] + halfSizeX, static_cast<double>(_imgWitdth - 1));
+    double topEdgeY = std::max(featurePoint_image_cs[1] - halfSizeY, 0.);
+    double bottomEdgeY = std::min(featurePoint_image_cs[1] + halfSizeY, static_cast<double>(_imgHeight - 1));
+
+    for (int i = static_cast<int>(topEdgeY); i <= static_cast<int>(bottomEdgeY); i++) {
+        for (int j = static_cast<int>(leftEdgeX); j <= static_cast<int>(rightEdgeX); j++) {
+            cv::Point neighbor(j,i);
+            uint16_t index = _img_points_lidar.at<uint16_t>(neighbor);
+            if (index > 0u) {
+                pcIndicesRaw.push_back(index);
+                neighborPoints.push_back(neighbor);
+            }
+        }
+    }
+}
+
 }

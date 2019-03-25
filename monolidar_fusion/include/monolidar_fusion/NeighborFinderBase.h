@@ -39,6 +39,12 @@ public:
                               const float scaleWidth = 1,
                               const float scaleHeight = 1) = 0;
 
+    virtual void getNeighbors(const Eigen::Vector2d &featurePoint_image_cs,
+                            const std::vector<cv::Point3f> &points_cs_camera,
+                            std::vector<uint16_t> &pcIndicesRaw,
+                            std::vector<cv::Point> &neighborPoints
+                            ) = 0;
+
     /*
      * Get the 3d Points from a cloud using it's indices
      * @points_cs_camera [in] Complete pointcloud in camera coordinates

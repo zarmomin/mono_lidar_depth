@@ -14,9 +14,9 @@
 
 class DepthEstimationWrapper{
  public:
-  //cv::Mat image;
+  cv::Mat image;
   Mono_Lidar::DepthEstimator depth_estimator;
-  //double image_time;
+  double image_time;
   double lidar_time;
   double feature_time;
   Eigen::Matrix2Xd feature_points;
@@ -33,7 +33,7 @@ class DepthEstimationWrapper{
         0.0, 0.0, 1.0;
     depth_estimator.InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
     depth_estimator.Initialize(intrinsics);
-    //image_time = -1;
+    image_time = -1;
     lidar_time = -2;
     feature_time = -3;
   };
@@ -41,6 +41,8 @@ class DepthEstimationWrapper{
   void assignValuesFromFeatureCloud()
   {
     feature_points.resize(2, feature_point_cloud->width);
+    rovio_depths.clear();
+    rovio_indices.clear();
     for(size_t i=0; i<feature_point_cloud->width;i++)
     {
       const pcl::PointXYZI& pt = feature_point_cloud->at(i);
@@ -54,28 +56,24 @@ class DepthEstimationWrapper{
   void handleDepthAssociation(const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& lidar_cloud)
   {
     // if timing is right
-    if (/*std::fabs(image_time - feature_time) < 0.01 &&*/ std::fabs(feature_time - lidar_time) < 0.05) {
+    if (std::fabs(image_time - feature_time) < 0.01 && std::fabs(feature_time - lidar_time) < 0.05) {
       int n_features = feature_points.cols();
       Eigen::VectorXd depths(n_features);
       Eigen::VectorXi resultTypes(n_features);
       depth_estimator.CalculateDepth(lidar_cloud, feature_points, depths, resultTypes, plane_placeholder);
 
       /// evaluate
-      //cv::Mat coloredImage;
-      //cv::cvtColor(image, coloredImage, cv::COLOR_GRAY2BGR);
-      // todo: verify that # lidar points is correct
+      cv::Mat coloredImage;
+      cv::cvtColor(image, coloredImage, cv::COLOR_GRAY2BGR);
 
       // lidar points over image
-      /*Eigen::Matrix2Xd visiblePoints;
+      std::vector<cv::Point2f> visiblePoints;
       std::vector<double> lidar_depths;
       depth_estimator.getPointsCloudImageCs(visiblePoints, lidar_depths);
       for (int i=0;i < lidar_depths.size();i++)
       {
         int intensity = static_cast<int>(2.0*lidar_depths[i]);
-        cv::Point2f pt;
-        pt.x = static_cast<float>(visiblePoints(0,i));
-        pt.y = static_cast<float>(visiblePoints(1,i));
-        cv::ellipse(coloredImage, pt, cv::Size(2,2), 0, 0, 360, cv::Scalar(0,50,intensity), -1, 8, 0);
+        cv::ellipse(coloredImage, visiblePoints[i], cv::Size(2,2), 0, 0, 360, cv::Scalar(0,50,intensity), -1, 8, 0);
       }
 
       // draw the feature points in pink and their indices
@@ -96,15 +94,12 @@ class DepthEstimationWrapper{
       }
 
       // feature neighbors in blue
-      std::vector<Eigen::Vector2d> neighbors;
+      std::vector<cv::Point2f> neighbors;
       depth_estimator.getCloudNeighbors(neighbors);
       for (int i=0;i < neighbors.size();i++)
       {
         cv::Scalar intensity = cv::Scalar(204,50,0);
-        cv::Point2f pt;
-        pt.x = static_cast<float>(neighbors[i][0]);
-        pt.y = static_cast<float>(neighbors[i][1]);
-        cv::ellipse(coloredImage, pt, cv::Size(2,2), 0, 0, 360, intensity, -1, 8, 0);
+        cv::ellipse(coloredImage, neighbors[i], cv::Size(2,2), 0, 0, 360, intensity, -1, 8, 0);
       }
 
       // draw the points for which the depth was successfully calculated in green and their indices
@@ -123,7 +118,7 @@ class DepthEstimationWrapper{
       }
 
       cv::imshow("image", coloredImage);
-      cv::waitKey(10);*/
+      cv::waitKey(0);
 
       /*pcl::io::savePCDFile("/home/nico/datasets/eschlikon/raww/"+std::to_string(lidar_time)+"_cloud.pcd", *lidar_cloud);
       pcl::io::savePCDFile("/home/nico/datasets/eschlikon/raww/"+std::to_string(lidar_time)+"_features.pcd", *feature_point_cloud);
