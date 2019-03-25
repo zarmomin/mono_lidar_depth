@@ -177,6 +177,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
   _points_triangle_corners.clear();
   _points_neighbors.clear();
   _points_groundplane.clear();
+  _points.Clear();
 
   // Change coordinate frame
   Transform_Cloud_LidarToCamera(cloud);
