@@ -38,7 +38,14 @@
 namespace Mono_Lidar {
 
 bool DepthEstimator::Initialize(const Eigen::Matrix3d& K) {
-  _camera = std::make_shared<CameraPinhole>(_imgWitdh, _imgHeight, K);
+  cv::Mat_<float> d_(4,1);
+  d_<< -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
+  _camera = std::make_shared<CameraPinhole>(_imgWitdh, _imgHeight,
+      static_cast<float>(K(0,0)), static_cast<float>(K(1,1)),
+      static_cast<float>(K(0,2)), static_cast<float>(K(1,2)), d_);
+  //camera_matrix << 395.873, 0, 372.495,
+  //    0, 395.786, 214.319,
+  //    0, 0, 1;
   return true;
 }
 
@@ -489,8 +496,6 @@ bool DepthEstimator::CalculateNeighbors(
   // get the indices of the neighbors in the image
   this->_neighborFinder->getNeighbors(
       featurePoint_image_cs, this->_points._points_cs_camera, neighborIndicesCut, calcStats, scaleX, scaleY);
-  //std::vector<cv::Point> neighborsDirectly;
-  //this->_neighborFinder->getNeighbors(featurePoint_image_cs, this->_points._points_cs_camera, neighborIndicesCut, neighborsDirectly);
 
   // todo: remove when debugging is done
   if (_parameters->do_logging) {
@@ -727,10 +732,8 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
   }
 
   // get the depth of the feature point
-  Eigen::Vector3d viewingRaySupportPoint;
   Eigen::Vector3d viewingRayDirection;
-  _camera->getViewingRays(point_image_cs, viewingRaySupportPoint,
-                          viewingRayDirection);
+  _camera->getViewingRays(point_image_cs, viewingRayDirection);
 
   if (viewingRayDirection.z() < 0) viewingRayDirection *= -1;
 
@@ -887,21 +890,10 @@ void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_
   Logger::Instance().Log(Logger::MethodEnd,
                          "DepthEstimator::Transform_Cloud_LidarToCamera::Map");
 
-  cv::Mat_<float> K(3, 3);
-  K << 395, 0, 375,
-  0, 395, 239,
-  0, 0, 1;
-
-  cv::Mat_<float> d(4, 1);
-  //d << -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
-  d << 0,0,0,0;
-  cv::Mat_<float> r(3,1);
-  r << 0,0,0;
-
   Logger::Instance().Log(Logger::MethodStart,
                          "DepthEstimator::Transform_Cloud_LidarToCamera::CamstuffCV");
 
-  cv::projectPoints(_points._points_cs_camera, r, r, K, d,  _points._points_cs_image);
+  _camera->getImagePoints(_points._points_cs_camera, _points._points_cs_image);
 
   Logger::Instance().Log(Logger::MethodEnd,
                          "DepthEstimator::Transform_Cloud_LidarToCamera::CamstuffCV");

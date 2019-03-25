@@ -179,4 +179,4 @@ viewray_plane_orthoganality_treshold: 0.0
 do_debug_singleFeatures: 0
 do_publish_points: 0
 do_depth_calc_statistics: 0
-do_logging: 1
+do_logging: 0

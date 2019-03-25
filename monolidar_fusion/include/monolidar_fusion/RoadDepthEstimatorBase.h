@@ -41,10 +41,11 @@ public:
                                   const double toleranceValue);
 
     void EnableTresholdDepthLocal(const std::shared_ptr<TresholdDepthLocal>& obj);
-
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 protected:
     std::shared_ptr<LinePlaneIntersectionBase> _linePlaneIntersection;
     std::shared_ptr<TresholdDepthGlobal> _tresholdDepthGlobal;
     std::shared_ptr<TresholdDepthLocal> _tresholdDepthLocal;
+    const Eigen::Vector3d viewingRaySupportPoint = Eigen::Vector3d::Zero();
 };
 }

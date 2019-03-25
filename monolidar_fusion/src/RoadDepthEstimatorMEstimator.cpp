@@ -41,7 +41,7 @@ std::pair<DepthResultType, double> RoadDepthEstimatorMEstimator::CalculateDepth(
     // get the ray through camera center and image feature point
     Eigen::Vector3d viewingRaySupportPoint;
     Eigen::Vector3d viewingRayDirection;
-    _camera->getViewingRays(point_image, viewingRaySupportPoint, viewingRayDirection);
+    _camera->getViewingRays(point_image, viewingRayDirection);
 
     if (viewingRayDirection.z() < 0)
         viewingRayDirection *= -1;

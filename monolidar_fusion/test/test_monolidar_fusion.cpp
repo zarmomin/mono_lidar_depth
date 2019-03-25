@@ -104,36 +104,6 @@ void readPointCloud(const std::string& filename, pcl::PointCloud<pcl::PointXYZI>
   }
 }
 
-template<typename Func>
-struct lambda_as_visitor_wrapper : Func {
-  lambda_as_visitor_wrapper(const Func& f) : Func(f) {}
-  template<typename S,typename I>
-  void init(const S& v, I i, I j) { return Func::operator()(v,i,j); }
-};
-
-template<typename Mat, typename Func>
-void visit_lambda(const Mat& m, const Func& f)
-{
-  lambda_as_visitor_wrapper<Func> visitor(f);
-  m.visit(visitor);
-}
-
-
-
-TEST(Wellwlee, reductions)
-{
-  pcl::PointCloud<pcl::PointXYZI> feature_cloud;
-  readPointCloud("/home/nico/datasets/eschlikon/raww/1549469580.744550_features.pcd", feature_cloud);
-  Eigen::Matrix2Xd m = feature_cloud.getMatrixXfMap().cast<double>().topRows<2>();
-  std::vector<Eigen::Triplet<double>> indices;
-  visit_lambda(m,
-               [&indices](double v, int i, int j) {
-                 if(i==0 && v<400)
-                   indices.push_back(Eigen::Triplet<double>(i,j,v));
-               });
-
-}
-
 TEST(Interface, real_data)
 {
   DepthEstimationWrapper wrapper;
@@ -155,12 +125,12 @@ TEST(Interface, complete_run)
 {
   const int img_width = 720;
   const int img_height = 480;
-    const double cam_p_u = 375;
-    const double cam_p_v = 239;
-    const double cam_f = 395;
+    const float cam_p_u = 375;
+    const float cam_p_v = 239;
+    const float cam_f = 395;
     std::srand(42);
     std::shared_ptr<CameraPinhole> cam;
-    cam = std::make_shared<CameraPinhole>(img_width, img_height, cam_f, cam_p_u, cam_p_v);
+    cam = std::make_shared<CameraPinhole>(img_width, img_height, cam_f, cam_f, cam_p_u, cam_p_v);
     Mono_Lidar::DepthEstimator depthEstimator;
     depthEstimator.InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
     depthEstimator.Initialize(cam);
@@ -345,95 +315,80 @@ TEST(Interface, visiblePointRetrieval)
     ASSERT_TRUE(visiblePoints[i].y >= 0 && visiblePoints[i].y < img_height);
   }
 }
-/*
+
 TEST(NeigborFinder, findByPixel) {
     const int img_width = 100;
     const int img_height = 100;
     const double cam_p_u = 50;
     const double cam_p_v = 50;
-    const double cam_f = 600;
-    const int nf_search_widh = 3;
+    const double cam_f = 60;
+    const int nf_search_width = 3;
     const int nf_search_height = 5;
 
     // init objects
     std::shared_ptr<CameraPinhole> cam;
-    cam = std::make_shared<CameraPinhole>(img_width, img_height, cam_f, cam_p_u, cam_p_v);
-    Mono_Lidar::NeighborFinderPixel neighborFinder(img_width, img_height, nf_search_widh, nf_search_height);
+    cam = std::make_shared<CameraPinhole>(img_width, img_height, cam_f, cam_f, cam_p_u, cam_p_v);
+    Mono_Lidar::NeighborFinderPixel neighborFinder(img_width, img_height, nf_search_width, nf_search_height);
 
     // init points
     const int point_count = 50;
 
     std::vector<cv::Point2f> points_2d_orig;
-    Eigen::Matrix3Xd points_3d_cam;
-    points_3d_cam.resize(3, point_count);
-
     for (int i = 0; i < point_count; i++) {
         const int u = std::rand() % 10;
         const int v = std::rand() % 10;
         points_2d_orig.push_back(cv::Point2f(u, v));
     }
 
-    Eigen::Matrix3Xd support_points;
-    support_points.setZero(3, point_count);
-    Eigen::Matrix3Xd directions;
-    directions.setZero(3, point_count);
+    std::vector<cv::Point3f> points_3d_cam;
+    for (auto pt: points_2d_orig) {
+      Eigen::Vector2d ptt(pt.x, pt.y);
+      Eigen::Vector3d dir;
+      cam->getViewingRays(ptt, dir);
+      points_3d_cam.push_back(cv::Point3f(dir[0],dir[1],dir[2]));
+    }
 
-    cam->getViewingRays(points_2d_orig, support_points, directions);
-
-    std::cout << directions.colwise().norm() << std::endl;
-
+    /*std::vector<cv::Point3f> points_3d_cam;
     // init features depth
     for (int i = 0; i < int(point_count); ++i) {
-        points_3d_cam.block(0, i, 3, 1) = support_points.block(0, i, 3, 1) +
-                                          static_cast<double>((std::rand() % 10 + 1)) * directions.block(0, i, 3, 1);
-    }
+        points_3d_cam.push_back(static_cast<float>((std::rand() % 10 + 1)) * directions[i]);
+    }*/
 
     // project points on image plane again
-    Eigen::Matrix2Xd points_2d_projected;
-    points_2d_projected.resize(2, point_count);
-
+    std::vector<cv::Point2f> points_2d_projected;
     cam->getImagePoints(points_3d_cam, points_2d_projected);
 
-
-    // Initialize neighbor finder
-    std::vector<int> point_index;
-
-    for (int i = 0; i < point_count; i++) {
-        point_index.push_back(i);
-    }
-
-  neighborFinder.InitializeLidarProjection(points_2d_orig);
+    neighborFinder.InitializeLidarProjection(points_2d_orig);
 
     // get neighbors from tested method
     for (int i = 0; i < point_count; i++) {
         Eigen::Vector2d feature;
-        feature.x() = points_2d_orig(0, i);
-        feature.y() = points_2d_orig(1, i);
+        feature.x() = points_2d_orig[i].x;
+        feature.y() = points_2d_orig[i].y;
 
-        std::vector<int> index_out;
-
-        neighborFinder.getNeighbors(feature, points_3d_cam, point_index, index_out);
+        std::vector<uint16_t > index_out;
+        neighborFinder.getNeighbors(feature, points_3d_cam, index_out);
 
         // test if neighbor pos is in tolerance distance from feature point
         for (const auto& index : index_out) {
             Eigen::Vector2d neighbor_projected;
-            neighbor_projected.x() = points_2d_projected(0, index);
-            neighbor_projected.y() = points_2d_projected(1, index);
+            neighbor_projected.x() = points_2d_projected[index].x;
+            neighbor_projected.y() = points_2d_projected[index].y;
 
             Eigen::Vector2d neighbor_calc;
-            neighbor_calc.x() = points_2d_orig(0, index);
-            neighbor_calc.y() = points_2d_orig(1, index);
+            neighbor_calc.x() = points_2d_orig[index].x;
+            neighbor_calc.y() = points_2d_orig[index].y;
 
             double points_dist = (neighbor_projected - neighbor_calc).norm();
             double dist_from_feature_u = fabs(neighbor_calc.x() - feature.x());
             double dist_from_feature_v = fabs(neighbor_calc.y() - feature.y());
 
             ASSERT_NEAR(points_dist, 0., 0.01);
-            ASSERT_LE(dist_from_feature_u, std::ceil(static_cast<double>(nf_search_widh) * 0.5) + 0.01);
+            ASSERT_LE(dist_from_feature_u, std::ceil(static_cast<double>(nf_search_width) * 0.5) + 0.01);
             ASSERT_LE(dist_from_feature_v, std::ceil(static_cast<double>(nf_search_height) * 0.5) + 0.01);
         }
     }
-}*/
+}
 
 
 TEST(Histogram, GetNearestPoint) {

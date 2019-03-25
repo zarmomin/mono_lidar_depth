@@ -347,6 +347,7 @@ private:
     std::shared_ptr<CameraPinhole> _camera;
     std::ofstream _debugFile;
     DepthCalculationStatistics _depthCalcStats;
+    const Eigen::Vector3d viewingRaySupportPoint = Eigen::Vector3d::Zero();
 
     bool _isLatestTransformSet = false;
     // image variabes (input image)

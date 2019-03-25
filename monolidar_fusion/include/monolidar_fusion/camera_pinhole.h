@@ -10,6 +10,9 @@
 #include <iostream>
 #include <vector>
 #include <Eigen/Eigen>
+#include <opencv2/core.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 /**
 * @class CameraPinhole
@@ -18,23 +21,41 @@
 * interface for a pinhole camera
 */
 class CameraPinhole {
-public:
-    // Specify Eigen Alignment, should be obsolete with c++17
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-public: // Attributes.
 public: // Public methods.
     // Default constructor.
     explicit CameraPinhole(
-        int width, int height, double focal_length, double principal_point_x, double principal_point_y)
-            : width_(width), height_(height) {
-        makeIntrinsics(focal_length, principal_point_x, principal_point_y);
+        int width, int height, float focal_length_x, float focal_length_y, float principal_point_x, float principal_point_y,
+        const cv::Mat_<float>& distortion_coefficients = cv::Mat_<float>(4, 1, 0.0f))
+            : width_(width), height_(height), fx(focal_length_x), fy(focal_length_y), cx(principal_point_x), cy(principal_point_y) {
+        intrinsics = cv::Mat_<float>(3, 3);
+        intrinsics << focal_length_x, 0, principal_point_x,
+            0, focal_length_y, principal_point_y,
+            0, 0, 1;
+        std::cout << std::endl << "Setting LIMO camera matrix to:" << std::endl << intrinsics << std::endl;
+        distortion_coeffs = distortion_coefficients;
+        //distortion_coeffs = cv::Mat_<float> (4, 1);
+        //distortion_coeffs << -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
+        rotVec_LC = cv::Mat_<float> (3,1);
+        rotVec_LC << 0,0,0;
+        B_r_LC = cv::Mat_<float>(3,1);
+        B_r_LC << 0,0,0;
     }
 
-    // Default constructor.
-    explicit CameraPinhole(int width, int height, const Eigen::Matrix3d& camera_matrix)
+    CameraPinhole(int width, int height, const cv::Mat_<float>& camera_matrix, const cv::Mat_<float>& distortion_coefficients = cv::Mat_<float>(4, 1, 0.0f))
     : width_(width), height_(height) {
         intrinsics = camera_matrix;
-        intrinsics_inverted = intrinsics.inverse();
+        fx = intrinsics.at<float>(0, 0);
+        fy = intrinsics.at<float>(1, 1);
+        cx = intrinsics.at<float>(0, 2);
+        cy = intrinsics.at<float>(1, 2);
+        distortion_coeffs = distortion_coefficients;
+        std::cout << std::endl << "Setting LIMO camera matrix to:" << std::endl << intrinsics << std::endl;
+        //distortion_coeffs = cv::Mat_<float> (4, 1);
+        //distortion_coeffs << -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
+        rotVec_LC = cv::Mat_<float> (3,1);
+        rotVec_LC << 0,0,0;
+        B_r_LC = cv::Mat_<float>(3,1);
+        B_r_LC << 0,0,0;
     }
 
     // Default destructor.
@@ -53,56 +74,33 @@ public: // Public methods.
         height = height_;
     }
 
-    template <int N>
-    void getViewingRays(const Eigen::Matrix<double, 2, N>& image_points,
-                        Eigen::Matrix<double, 3, N>& support_points,
-                        Eigen::Matrix<double, 3, N>& directions) const {
-
-        // Copy for circumventing the copy constructor
-        // (would be different for static and dynamic sized matrices).
-        //        Eigen::Matrix<double, 3, N> image_points_hom;
-        //        image_points_hom.setOnes(3, directions.cols());
-        //        // Dynamic access in case that N==Eigen::Dynamic.
-        //        image_points_hom.block(0, 0, 2, N) = image_points;
-        // Get directions.
-        directions = intrinsics_inverted * image_points.colwise().homogeneous();
-        directions = directions.colwise().normalized();
-        // We only support SVP models.
-        support_points.setZero(3, directions.cols());
+    void getViewingRays(const Eigen::Vector2d& image_point,
+                        Eigen::Vector3d& direction) const {
+        std::vector<cv::Point2f> pts, undistorted;
+        pts.push_back(cv::Point2f(image_point[0], image_point[1]));
+        cv::undistortPoints(pts, undistorted, intrinsics,
+                            distortion_coeffs, cv::noArray(), intrinsics);
+        const cv::Point2f& undistorted_pt = undistorted[0];
+        direction[0] = (undistorted_pt.x - cx) / fx;
+        direction[1] = (undistorted_pt.y - cy) / fy;
+        direction[2] = 1.0;
     }
 
-    template <int N>
-    Eigen::Array<bool, 1, N> getImagePoints(const Eigen::Matrix<double, 3, N>& points3d,
-                                            Eigen::Matrix<double, 2, N>& image_points) const {
-        Eigen::Matrix<double, 3, N> image_points_3d = intrinsics * points3d;
-        // https: // eigen.tuxfamily.org/dox/group__Geometry__Module.html#title42
-        image_points = image_points_3d.colwise().hnormalized();
-
-        // Calculate if output is valid (in bounds of height and width)
-        Eigen::Array<bool, 1, N> is_in_bounds =
-            (image_points.row(0).array() >= 0.) && (image_points.row(0).array() <= static_cast<double>(width_)) &&
-            (image_points.row(1).array() >= 0.) && (image_points.row(1).array() <= static_cast<double>(height_));
-        return is_in_bounds;
-    }
-
-    bool getImagePoint(const Eigen::Vector3d& pt, Eigen::Vector2d& pt_image)
-    {
-        pt_image = (intrinsics * pt).hnormalized();
-        return pt_image[0] >= 0 && pt_image[0] < width_ && pt_image[1] >= 0 && pt_image[1] < height_;
+    void getImagePoints(const std::vector<cv::Point3f>& lidar_points, std::vector<cv::Point2f>& image_points) const {
+        cv::projectPoints(lidar_points, rotVec_LC, B_r_LC, intrinsics, distortion_coeffs,  image_points);
     }
 
 private:
-    void makeIntrinsics(double focal_length, double principal_point_x, double principal_point_y) {
-        intrinsics = Eigen::Matrix3d::Identity();
-        intrinsics(0, 0) = intrinsics(1, 1) = focal_length;
-        intrinsics(0, 2) = principal_point_x;
-        intrinsics(1, 2) = principal_point_y;
-        intrinsics_inverted = intrinsics.inverse();
-    }
 
 private:
     int width_;
     int height_;
-    Eigen::Matrix3d intrinsics;
-    Eigen::Matrix3d intrinsics_inverted;
+    float fx;
+    float fy;
+    float cx;
+    float cy;
+    cv::Mat_<float> intrinsics;
+    cv::Mat_<float> distortion_coeffs;
+    cv::Mat_<float> B_r_LC;
+    cv::Mat_<float> rotVec_LC;
 };
