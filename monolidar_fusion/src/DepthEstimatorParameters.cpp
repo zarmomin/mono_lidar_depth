@@ -109,6 +109,7 @@ void DepthEstimatorParameters::fromFile(const std::string& filePath) {
     do_debug_singleFeatures = (int)fSettings[str_do_debug_singleFeatures];
     do_publish_points = (int)fSettings[str_do_publish_points];
     do_depth_calc_statistics = (int)fSettings[str_do_depth_calc_statistics];
+    do_logging = (int)fSettings[str_do_logging];
 }
 
 
@@ -224,6 +225,7 @@ void DepthEstimatorParameters::print() {
     cout << "do_debug_singleFeatures: " << do_debug_singleFeatures << endl;
     cout << "do_publish_points: " << do_publish_points << endl;
     cout << "do_depth_calc_statistics: " << do_depth_calc_statistics << endl;
+    cout << "do_logging: " << do_logging << endl;
     cout << endl;
 }
 

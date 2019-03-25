@@ -162,10 +162,12 @@ public:
     bool do_debug_singleFeatures{false};
     bool do_publish_points{true};
     bool do_depth_calc_statistics{true};
+    bool do_logging{false};
 
     std::string str_do_debug_singleFeatures = "do_debug_singleFeatures";
     std::string str_do_publish_points = "do_publish_points";
     std::string str_do_depth_calc_statistics = "do_depth_calc_statistics";
+    std::string str_do_logging = "do_logging";
 };
 
 } // namespace Img_Lidar

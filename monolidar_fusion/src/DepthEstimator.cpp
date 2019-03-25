@@ -133,6 +133,8 @@ bool DepthEstimator::InitializeParameters()
     } else
         this->_checkPlanarTriangle = NULL;
 
+    Logger::Instance().setEnabled(_parameters->do_logging);
+
     _isInitialized = true;
     return true;
 }
@@ -377,29 +379,15 @@ void DepthEstimator::CalculateDepth(
     points_depths(i) = depthPair.second;
     resultType(i) = depthPair.first;
 
-    if (depthPair.first != DepthResultType::Success || depthPair.second < 0)
+    if (_parameters->do_debug_singleFeatures && (depthPair.first != DepthResultType::Success || depthPair.second < 0))
     {
-      std::cout << "\n" << i  << "th feature w/ result " << depthPair.first << "\n";
-
+      std::cout << "\n" << i  << "th feature w/ result " << DepthResultTypeStrings[depthPair.first] << "\n";
+    }
+      /*
       for (auto pt : stats->_neighbors3d)
       {
         std::cout << "\nneigbor " << std::get<0>(pt) << ", " << std::get<1>(pt) << ", "<< std::get<2>(pt);
-      }
-      /*for (auto pt : stats->_neighbors2d)
-      {
-        std::cout << "\nneigbor " << pt.first << ", " << pt.second;
       }*/
-    }
-    //        #pragma omp critical
-    //        {
-    //            LogDepthCalcStats(depthPair.first);
-
-    //            if (_parameters->do_debug_singleFeatures)
-    //            {
-    //                stats->_calcResult = depthPair.first;
-    //                this->_depthCalcStats.getPointStats().push_back(stats);
-    //            }
-    //        }
   }
 
   if (_parameters->do_depth_calc_statistics) {
