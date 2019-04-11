@@ -21,6 +21,7 @@
 #include "monolidar_fusion/PCA.h"
 //#include "NeighborFinderKdd.h"
 //#include "Converter.h"
+#include "monolidar_fusion/common.h"
 #include "monolidar_fusion/DepthEstimator.h"
 
 #include "monolidar_fusion/LinePlaneIntersectionNormal.h"
@@ -37,15 +38,34 @@
 
 namespace Mono_Lidar {
 
-bool DepthEstimator::Initialize(const Eigen::Matrix3d& K) {
-  cv::Mat_<float> d_(4,1);
-  d_<< -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
+bool DepthEstimator::Initialize(const Eigen::Matrix3d &K) {
+  if (!_isInitializedConfig) {
+    throw "Call 'InitConfig' before calling 'Initialize'.";
+  }
+  cv::Mat_<float> R_C_L;
+  quaternionToRotationMatrix(_parameters->q_C_L, R_C_L);
   _camera = std::make_shared<CameraPinhole>(_imgWitdh, _imgHeight,
       static_cast<float>(K(0,0)), static_cast<float>(K(1,1)),
-      static_cast<float>(K(0,2)), static_cast<float>(K(1,2)), d_);
-  //camera_matrix << 395.873, 0, 372.495,
-  //    0, 395.786, 214.319,
-  //    0, 0, 1;
+      static_cast<float>(K(0,2)), static_cast<float>(K(1,2)), R_C_L, _parameters->B_r_C_L);
+  return true;
+}
+
+bool DepthEstimator::Initialize(const Eigen::Matrix3d &K, const Eigen::VectorXd& d) {
+  if (!_isInitializedConfig) {
+    throw "Call 'InitConfig' before calling 'Initialize'.";
+  }
+
+  cv::Mat_<float> d_(d.rows(), 1);
+  for (int i=0;i<d.rows();i++)
+  {
+    d_.at<float>(i) = static_cast<float>(d(i));
+  }
+
+  cv::Mat_<float> R_C_L;
+  quaternionToRotationMatrix(_parameters->q_C_L, R_C_L);
+  _camera = std::make_shared<CameraPinhole>(_imgWitdh, _imgHeight,
+                                            static_cast<float>(K(0,0)), static_cast<float>(K(1,1)),
+                                            static_cast<float>(K(0,2)), static_cast<float>(K(1,2)), R_C_L, _parameters->B_r_C_L,  d_);
   return true;
 }
 
@@ -141,6 +161,10 @@ bool DepthEstimator::InitializeParameters()
         this->_checkPlanarTriangle = NULL;
 
     Logger::Instance().setEnabled(_parameters->do_logging);
+
+    // camera stuff
+    _imgWitdh = _parameters->image_width;
+    _imgHeight = _parameters->image_height;
 
     _isInitialized = true;
     return true;
@@ -498,12 +522,12 @@ bool DepthEstimator::CalculateNeighbors(
       featurePoint_image_cs, this->_points._points_cs_camera, neighborIndicesCut, calcStats, scaleX, scaleY);
 
   // todo: remove when debugging is done
-  if (_parameters->do_logging) {
-    for (int i=0;i<neighborIndicesCut.size();i++) {
-      cv::Point pt = this->_points._points_cs_image[neighborIndicesCut[i]];
-      this->_points_neighbors.push_back(this->_points._points_cs_image[neighborIndicesCut[i]]);
-    }
+  //if (_parameters->do_logging) {
+  for (int i=0;i<neighborIndicesCut.size();i++) {
+    cv::Point pt = this->_points._points_cs_image[neighborIndicesCut[i]];
+    this->_points_neighbors.push_back(this->_points._points_cs_image[neighborIndicesCut[i]]);
   }
+  //}
 
   // get the 3D neighbor points from the pointcloud using the given indices
   this->_neighborFinder->getNeighbors(this->_points._points_cs_camera, neighborIndicesCut, neighbors);

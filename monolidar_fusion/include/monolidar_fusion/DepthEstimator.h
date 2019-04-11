@@ -68,8 +68,8 @@ public:
      */
     bool Initialize(const std::shared_ptr<CameraPinhole>& camera);
 
-
-    bool Initialize(const Eigen::Matrix3d& K);
+    bool Initialize(const Eigen::Matrix3d &K);
+    bool Initialize(const Eigen::Matrix3d &K, const Eigen::VectorXd& d);
 
     /*
      * Initializes the parameters from a config file. Must be called before class usuage.
@@ -351,8 +351,8 @@ private:
 
     bool _isLatestTransformSet = false;
     // image variabes (input image)
-    const int _imgWitdh = 720;
-    const int _imgHeight = 480;
+    int _imgWitdh = 720;
+    int _imgHeight = 480;
 };
 
 

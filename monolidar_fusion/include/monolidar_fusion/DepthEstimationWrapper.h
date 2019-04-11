@@ -31,8 +31,10 @@ class DepthEstimationWrapper{
     intrinsics << 395.872620767, 0.0, 372.495185619,
         0.0, 395.786208753, 214.319312646,
         0.0, 0.0, 1.0;
+    Eigen::VectorXd d_(4);
+    d_<< -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
     depth_estimator.InitConfig("/home/nico/catkin_ws/src/mono_lidar_depth/monolidar_fusion/parameters.yaml", false);
-    depth_estimator.Initialize(intrinsics);
+    depth_estimator.Initialize(intrinsics, d_);
     image_time = -1;
     lidar_time = -2;
     feature_time = -3;

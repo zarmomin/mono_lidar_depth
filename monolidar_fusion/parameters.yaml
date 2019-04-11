@@ -173,6 +173,18 @@ triangleplanar_crossnorm_treshold: 0.1
 # The higher this value, the more orthogonal the local patch is to view ray (less error prone)
 viewray_plane_orthoganality_treshold: 0.0
 
+# _____ Camera stuff _____
+image_width: 720
+image_height: 480
+# Quaternion of Lidar to Camera in Body frame
+q_C_L_x: 0
+q_C_L_y: 0
+q_C_L_z: 0
+q_C_L_w: 1
+# Translation of Lidar to Camera in Body frame
+B_r_C_L_x: 0
+B_r_C_L_y: 0
+B_r_C_L_z: 0
 
 # _____ Debug _____
 

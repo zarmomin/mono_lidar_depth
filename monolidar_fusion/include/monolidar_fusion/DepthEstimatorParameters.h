@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <opencv2/core.hpp>
 
 namespace Mono_Lidar {
 
@@ -168,6 +169,21 @@ public:
     std::string str_do_publish_points = "do_publish_points";
     std::string str_do_depth_calc_statistics = "do_depth_calc_statistics";
     std::string str_do_logging = "do_logging";
+
+    // extrinsics
+    cv::Mat_<float> q_C_L{(cv::Mat_<float>(4,1) << 0,0,0,1)};
+    cv::Mat_<float> B_r_C_L{(cv::Mat_<float>(3,1) << 0,0,0)};
+    std::string str_qCL_x = "q_C_L_x";
+    std::string str_qCL_y = "q_C_L_y";
+    std::string str_qCL_z = "q_C_L_z";
+    std::string str_qCL_w = "q_C_L_w";
+    std::string str_BrCL_x = "B_r_C_L_x";
+    std::string str_BrCL_y = "B_r_C_L_y";
+    std::string str_BrCL_z = "B_r_C_L_z";
+    int image_width{720};
+    int image_height{480};
+    std::string str_image_width = "image_width";
+    std::string str_image_height = "image_height";
 };
 
 } // namespace Img_Lidar

@@ -33,15 +33,30 @@ public: // Public methods.
             0, 0, 1;
         std::cout << std::endl << "Setting LIMO camera matrix to:" << std::endl << intrinsics << std::endl;
         distortion_coeffs = distortion_coefficients;
-        //distortion_coeffs = cv::Mat_<float> (4, 1);
-        //distortion_coeffs << -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
-        rotVec_LC = cv::Mat_<float> (3,1);
-        rotVec_LC << 0,0,0;
-        B_r_LC = cv::Mat_<float>(3,1);
-        B_r_LC << 0,0,0;
+        std::cout << std::endl << "Setting LIMO distortion coeffs to:" << std::endl << distortion_coeffs << std::endl;
+        rotVec_CL_ = cv::Mat_<float> (3,1);
+        rotVec_CL_ << 0,0,0;
+        B_r_CL_ = cv::Mat_<float>(3,1);
+        B_r_CL_ << 0,0,0;
     }
 
-    CameraPinhole(int width, int height, const cv::Mat_<float>& camera_matrix, const cv::Mat_<float>& distortion_coefficients = cv::Mat_<float>(4, 1, 0.0f))
+  explicit CameraPinhole(
+      int width, int height, float focal_length_x, float focal_length_y, float principal_point_x, float principal_point_y,
+      const cv::Mat_<float>& B_R_CL, const cv::Mat_<float> B_r_CL,
+      const cv::Mat_<float>& distortion_coefficients = cv::Mat_<float>(4, 1, 0.0f))
+      : width_(width), height_(height), fx(focal_length_x), fy(focal_length_y), cx(principal_point_x), cy(principal_point_y) {
+      intrinsics = cv::Mat_<float>(3, 3);
+      intrinsics << focal_length_x, 0, principal_point_x,
+          0, focal_length_y, principal_point_y,
+          0, 0, 1;
+      std::cout << std::endl << "Setting LIMO camera matrix to:" << std::endl << intrinsics << std::endl;
+      distortion_coeffs = distortion_coefficients;
+      std::cout << std::endl << "Setting LIMO distortion coeffs to:" << std::endl << distortion_coeffs << std::endl;
+      B_r_CL_ = B_r_CL;
+      cv::Rodrigues(B_R_CL, rotVec_CL_);
+  }
+
+    explicit CameraPinhole(int width, int height, const cv::Mat_<float>& camera_matrix, const cv::Mat_<float>& distortion_coefficients = cv::Mat_<float>(4, 1, 0.0f))
     : width_(width), height_(height) {
         intrinsics = camera_matrix;
         fx = intrinsics.at<float>(0, 0);
@@ -50,13 +65,26 @@ public: // Public methods.
         cy = intrinsics.at<float>(1, 2);
         distortion_coeffs = distortion_coefficients;
         std::cout << std::endl << "Setting LIMO camera matrix to:" << std::endl << intrinsics << std::endl;
-        //distortion_coeffs = cv::Mat_<float> (4, 1);
-        //distortion_coeffs << -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
-        rotVec_LC = cv::Mat_<float> (3,1);
-        rotVec_LC << 0,0,0;
-        B_r_LC = cv::Mat_<float>(3,1);
-        B_r_LC << 0,0,0;
+        std::cout << std::endl << "Setting LIMO distortion coeffs to:" << std::endl << distortion_coeffs << std::endl;
+        rotVec_CL_ = cv::Mat_<float> (3,1);
+        rotVec_CL_ << 0,0,0;
+        B_r_CL_ = cv::Mat_<float>(3,1);
+        B_r_CL_ << 0,0,0;
     }
+
+  explicit CameraPinhole(int width, int height, const cv::Mat_<float>& camera_matrix, const cv::Mat_<float>& B_R_CL, const cv::Mat_<float> B_r_CL, const cv::Mat_<float>& distortion_coefficients = cv::Mat_<float>(4, 1, 0.0f))
+      : width_(width), height_(height) {
+    intrinsics = camera_matrix;
+    fx = intrinsics.at<float>(0, 0);
+    fy = intrinsics.at<float>(1, 1);
+    cx = intrinsics.at<float>(0, 2);
+    cy = intrinsics.at<float>(1, 2);
+    distortion_coeffs = distortion_coefficients;
+    std::cout << std::endl << "Setting LIMO camera matrix to:" << std::endl << intrinsics << std::endl;
+    std::cout << std::endl << "Setting LIMO distortion coeffs to:" << std::endl << distortion_coeffs << std::endl;
+    B_r_CL_ = B_r_CL;
+    cv::Rodrigues(B_R_CL, rotVec_CL_);
+  }
 
     // Default destructor.
     ~CameraPinhole() = default;
@@ -87,12 +115,11 @@ public: // Public methods.
     }
 
     void getImagePoints(const std::vector<cv::Point3f>& lidar_points, std::vector<cv::Point2f>& image_points) const {
-        cv::projectPoints(lidar_points, rotVec_LC, B_r_LC, intrinsics, distortion_coeffs,  image_points);
+        cv::projectPoints(lidar_points, rotVec_CL_, B_r_CL_, intrinsics, distortion_coeffs,  image_points);
     }
-
-private:
-
-private:
+  cv::Mat_<float> B_r_CL_;
+  cv::Mat_<float> rotVec_CL_;
+ private:
     int width_;
     int height_;
     float fx;
@@ -101,6 +128,4 @@ private:
     float cy;
     cv::Mat_<float> intrinsics;
     cv::Mat_<float> distortion_coeffs;
-    cv::Mat_<float> B_r_LC;
-    cv::Mat_<float> rotVec_LC;
 };
