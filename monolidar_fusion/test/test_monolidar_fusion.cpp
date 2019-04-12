@@ -231,7 +231,7 @@ TEST(Interface, complete_run2) {
     const int u = (std::rand() % (img_width + 1));
     const int v = (std::rand() % (img_height + 1));
     points_2d_orig(0, i) = u;
-    points_2d_orig(1, i) = v;    
+    points_2d_orig(1, i) = v;
   }
 
   // generate lidar points
@@ -404,10 +404,8 @@ TEST(camera, image_point_conversion) {
   }
 
   // set rotation and translation
-  camera.rotVec_CL_ = rvec;
-  camera.B_r_CL_ = tvec;
   std::clock_t timeStart2 = std::clock();
-  camera.getImagePoints(points_inv, image_points_2);
+  camera.getImagePoints(points_inv, image_points_2, R, tvec);
   std::clock_t timeEnd2 = std::clock();
   double deltaTime2 = (double)(timeEnd2 - timeStart2) * 1000.0 / CLOCKS_PER_SEC;
   std::cout << "\nTrafo " << deltaTime2 << "\n";
@@ -600,7 +598,7 @@ TEST(conversion, quaternion_to_rot)
 {
   cv::Mat_<float> q(4,1);
   q << 0.0565233, 0.7913268, -0.5652334, 0.2260934;
-  cv::Mat_<float> R;
+  cv::Mat_<float> R, R2;
   Mono_Lidar::quaternionToRotationMatrix(q, R);
   Eigen::Quaternionf qe(0.2260934, 0.0565233, 0.7913268, -0.5652334);
   Eigen::Matrix3f Re = Eigen::Matrix3f::Identity();
@@ -614,4 +612,16 @@ TEST(conversion, quaternion_to_rot)
   ASSERT_NEAR(R.at<float>(2,0), Re(2,0), 1E-3);
   ASSERT_NEAR(R.at<float>(2,1), Re(2,1), 1E-3);
   ASSERT_NEAR(R.at<float>(2,2), Re(2,2), 1E-3);
+  Eigen::Vector4d q2;
+  q2 << 0.2260934, 0.0565233, 0.7913268, -0.5652334;
+  Mono_Lidar::quaternionToRotationMatrix(q2, R2);
+  ASSERT_NEAR(R2.at<float>(0,0), Re(0,0), 1E-3);
+  ASSERT_NEAR(R2.at<float>(0,1), Re(0,1), 1E-3);
+  ASSERT_NEAR(R2.at<float>(0,2), Re(0,2), 1E-3);
+  ASSERT_NEAR(R2.at<float>(1,0), Re(1,0), 1E-3);
+  ASSERT_NEAR(R2.at<float>(1,1), Re(1,1), 1E-3);
+  ASSERT_NEAR(R2.at<float>(1,2), Re(1,2), 1E-3);
+  ASSERT_NEAR(R2.at<float>(2,0), Re(2,0), 1E-3);
+  ASSERT_NEAR(R2.at<float>(2,1), Re(2,1), 1E-3);
+  ASSERT_NEAR(R2.at<float>(2,2), Re(2,2), 1E-3);
 }

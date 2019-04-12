@@ -176,19 +176,10 @@ viewray_plane_orthoganality_treshold: 0.0
 # _____ Camera stuff _____
 image_width: 720
 image_height: 480
-# Quaternion of Lidar to Camera in Body frame
-q_C_L_x: 0
-q_C_L_y: 0
-q_C_L_z: 0
-q_C_L_w: 1
-# Translation of Lidar to Camera in Body frame
-B_r_C_L_x: 0
-B_r_C_L_y: 0
-B_r_C_L_z: 0
 
 # _____ Debug _____
 
 do_debug_singleFeatures: 0
 do_publish_points: 0
 do_depth_calc_statistics: 0
-do_logging: 0
+do_logging: 1

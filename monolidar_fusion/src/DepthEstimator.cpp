@@ -5,9 +5,9 @@
  *      Author: wilczynski
  */
 
+#include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
-#include <Eigen/Core>
 #include <exception>
 #include <limits>
 
@@ -21,8 +21,8 @@
 #include "monolidar_fusion/PCA.h"
 //#include "NeighborFinderKdd.h"
 //#include "Converter.h"
-#include "monolidar_fusion/common.h"
 #include "monolidar_fusion/DepthEstimator.h"
+#include "monolidar_fusion/common.h"
 
 #include "monolidar_fusion/LinePlaneIntersectionNormal.h"
 #include "monolidar_fusion/LinePlaneIntersectionOrthogonalTreshold.h"
@@ -31,41 +31,37 @@
 #include "monolidar_fusion/RoadDepthEstimatorMaxSpanningTriangle.h"
 
 #include <chrono>
-#include <opencv2/core/types.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/core/types.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
 
 namespace Mono_Lidar {
 
-bool DepthEstimator::Initialize(const Eigen::Matrix3d &K) {
+bool DepthEstimator::Initialize(const Eigen::Matrix3d& K) {
   if (!_isInitializedConfig) {
     throw "Call 'InitConfig' before calling 'Initialize'.";
   }
-  cv::Mat_<float> R_C_L;
-  quaternionToRotationMatrix(_parameters->q_C_L, R_C_L);
-  _camera = std::make_shared<CameraPinhole>(_imgWitdh, _imgHeight,
-      static_cast<float>(K(0,0)), static_cast<float>(K(1,1)),
-      static_cast<float>(K(0,2)), static_cast<float>(K(1,2)), R_C_L, _parameters->B_r_C_L);
+  _camera = std::make_shared<CameraPinhole>(
+      _imgWitdh, _imgHeight, static_cast<float>(K(0, 0)),
+      static_cast<float>(K(1, 1)), static_cast<float>(K(0, 2)),
+      static_cast<float>(K(1, 2)));
   return true;
 }
 
-bool DepthEstimator::Initialize(const Eigen::Matrix3d &K, const Eigen::VectorXd& d) {
+bool DepthEstimator::Initialize(const Eigen::Matrix3d& K,
+                                const Eigen::VectorXd& d) {
   if (!_isInitializedConfig) {
     throw "Call 'InitConfig' before calling 'Initialize'.";
   }
 
   cv::Mat_<float> d_(d.rows(), 1);
-  for (int i=0;i<d.rows();i++)
-  {
+  for (int i = 0; i < d.rows(); i++) {
     d_.at<float>(i) = static_cast<float>(d(i));
   }
-
-  cv::Mat_<float> R_C_L;
-  quaternionToRotationMatrix(_parameters->q_C_L, R_C_L);
-  _camera = std::make_shared<CameraPinhole>(_imgWitdh, _imgHeight,
-                                            static_cast<float>(K(0,0)), static_cast<float>(K(1,1)),
-                                            static_cast<float>(K(0,2)), static_cast<float>(K(1,2)), R_C_L, _parameters->B_r_C_L,  d_);
+  _camera = std::make_shared<CameraPinhole>(
+      _imgWitdh, _imgHeight, static_cast<float>(K(0, 0)),
+      static_cast<float>(K(1, 1)), static_cast<float>(K(0, 2)),
+      static_cast<float>(K(1, 2)), d_);
   return true;
 }
 
@@ -77,99 +73,96 @@ bool DepthEstimator::Initialize(const std::shared_ptr<CameraPinhole>& camera) {
   return true;
 }
 
-
-bool DepthEstimator::InitializeParameters()
-{
-    // Initialize nearest neighbor search module
-    if (_parameters->neighbor_search_mode == 0) {
-        // neighbor pixel search
-        this->_neighborFinder = std::make_shared<NeighborFinderPixel>(
-            _imgWitdh, _imgHeight, _parameters->pixelarea_search_witdh,
-            _parameters->pixelarea_search_height);
-        this->_neighborFinder->Initialize(_parameters);
-    } else if (_parameters->neighbor_search_mode == 1) {
-        //		// neighbor kdd search
-        //		this->_neighborFinder = std::make_shared<NeighborFinderKdd>();
-        //		this->_neighborFinder->Initialize(_parameters);
-    } else
-        throw "neighbor_search_mode has the invalid value: " +
-            std::to_string(_parameters->neighbor_search_mode);
-    // Initialize treshold depth module
-    if (_parameters->treshold_depth_enabled) {
-        auto mode = (eTresholdDepthMode)_parameters->treshold_depth_mode;
-        this->_tresholdDepthGlobal = std::make_shared<TresholdDepthGlobal>(
-            mode, _parameters->treshold_depth_min, _parameters->treshold_depth_max);
-    } else
-        this->_tresholdDepthGlobal = NULL;
-    // Initialize local treshold depth module
-    if (_parameters->treshold_depth_local_enabled) {
-        auto mode = (eTresholdDepthMode)_parameters->treshold_depth_local_mode;
-        auto toleranceType =
-            (eTresholdToleranceType)_parameters->treshold_depth_local_valuetype;
-        this->_tresholdDepthLocal = std::make_shared<TresholdDepthLocal>(
-            mode, toleranceType, _parameters->treshold_depth_local_value);
-    } else
-        this->_tresholdDepthLocal = NULL;
-    // Initialize line plane intersection module
-    if (_parameters->viewray_plane_orthoganality_treshold > 0)
-        this->_linePlaneIntersection =
-            std::make_shared<LinePlaneIntersectionOrthogonalTreshold>(
-                _parameters->viewray_plane_orthoganality_treshold);
+bool DepthEstimator::InitializeParameters() {
+  // Initialize nearest neighbor search module
+  if (_parameters->neighbor_search_mode == 0) {
+    // neighbor pixel search
+    this->_neighborFinder = std::make_shared<NeighborFinderPixel>(
+        _imgWitdh, _imgHeight, _parameters->pixelarea_search_witdh,
+        _parameters->pixelarea_search_height);
+    this->_neighborFinder->Initialize(_parameters);
+  } else if (_parameters->neighbor_search_mode == 1) {
+    //		// neighbor kdd search
+    //		this->_neighborFinder = std::make_shared<NeighborFinderKdd>();
+    //		this->_neighborFinder->Initialize(_parameters);
+  } else
+    throw "neighbor_search_mode has the invalid value: " +
+        std::to_string(_parameters->neighbor_search_mode);
+  // Initialize treshold depth module
+  if (_parameters->treshold_depth_enabled) {
+    auto mode = (eTresholdDepthMode)_parameters->treshold_depth_mode;
+    this->_tresholdDepthGlobal = std::make_shared<TresholdDepthGlobal>(
+        mode, _parameters->treshold_depth_min, _parameters->treshold_depth_max);
+  } else
+    this->_tresholdDepthGlobal = NULL;
+  // Initialize local treshold depth module
+  if (_parameters->treshold_depth_local_enabled) {
+    auto mode = (eTresholdDepthMode)_parameters->treshold_depth_local_mode;
+    auto toleranceType =
+        (eTresholdToleranceType)_parameters->treshold_depth_local_valuetype;
+    this->_tresholdDepthLocal = std::make_shared<TresholdDepthLocal>(
+        mode, toleranceType, _parameters->treshold_depth_local_value);
+  } else
+    this->_tresholdDepthLocal = NULL;
+  // Initialize line plane intersection module
+  if (_parameters->viewray_plane_orthoganality_treshold > 0)
+    this->_linePlaneIntersection =
+        std::make_shared<LinePlaneIntersectionOrthogonalTreshold>(
+            _parameters->viewray_plane_orthoganality_treshold);
+  else
+    this->_linePlaneIntersection =
+        std::make_shared<LinePlaneIntersectionNormal>();
+  // Initialize Ransac plane for road estimation
+  if (_parameters->do_use_ransac_plane) {
+    // Initialize Depth Estimator for points which lie on the ground plane/road
+    if (_parameters->plane_estimator_use_triangle_maximation)
+      this->_roadDepthEstimator =
+          std::make_shared<RoadDepthEstimatorMaxSpanningTriangle>(
+              _parameters->plane_estimator_z_x_min_relation);
+    else if (_parameters->plane_estimator_use_leastsquares)
+      this->_roadDepthEstimator =
+          std::make_shared<RoadDepthEstimatorLeastSquares>();
+    else if (_parameters->plane_estimator_use_mestimator)
+      this->_roadDepthEstimator =
+          std::make_shared<RoadDepthEstimatorMEstimator>();
     else
-        this->_linePlaneIntersection =
-            std::make_shared<LinePlaneIntersectionNormal>();
-    // Initialize Ransac plane for road estimation
-    if (_parameters->do_use_ransac_plane) {
-        // Initialize Depth Estimator for points which lie on the ground plane/road
-        if (_parameters->plane_estimator_use_triangle_maximation)
-            this->_roadDepthEstimator =
-                std::make_shared<RoadDepthEstimatorMaxSpanningTriangle>(
-                    _parameters->plane_estimator_z_x_min_relation);
-        else if (_parameters->plane_estimator_use_leastsquares)
-            this->_roadDepthEstimator =
-                std::make_shared<RoadDepthEstimatorLeastSquares>();
-        else if (_parameters->plane_estimator_use_mestimator)
-            this->_roadDepthEstimator =
-                std::make_shared<RoadDepthEstimatorMEstimator>();
-        else
-            throw "No road depth estimator selected.";
+      throw "No road depth estimator selected.";
 
-        if (this->_tresholdDepthGlobal != NULL)
-            this->_roadDepthEstimator->EnableTresholdDepthGlobal(
-                this->_tresholdDepthGlobal);
+    if (this->_tresholdDepthGlobal != NULL)
+      this->_roadDepthEstimator->EnableTresholdDepthGlobal(
+          this->_tresholdDepthGlobal);
 
-        if (this->_tresholdDepthLocal != NULL)
-            this->_roadDepthEstimator->EnableTresholdDepthLocal(
-                this->_tresholdDepthLocal);
-    } else {
-        this->_roadDepthEstimator = NULL;
-    }
-    // Module for constructing a maximum size plane with 3 points with a given
-    // pointcloud
-    if (_parameters->do_use_triangle_size_maximation)
-        _planeCalcMaxSpanning =
-            std::make_shared<PlaneEstimationCalcMaxSpanningTriangle>(
-                _parameters->do_publish_points);
-    else
-        _planeCalcMaxSpanning = NULL;
-    // Plane planarity checker if the plane is constructed by using exactly 3
-    // points
-    if (_parameters->do_check_triangleplanar_condition) {
-        _checkPlanarTriangle = std::make_shared<PlaneEstimationCheckPlanar>(
-            _parameters->triangleplanar_crossnorm_treshold);
-    } else
-        this->_checkPlanarTriangle = NULL;
+    if (this->_tresholdDepthLocal != NULL)
+      this->_roadDepthEstimator->EnableTresholdDepthLocal(
+          this->_tresholdDepthLocal);
+  } else {
+    this->_roadDepthEstimator = NULL;
+  }
+  // Module for constructing a maximum size plane with 3 points with a given
+  // pointcloud
+  if (_parameters->do_use_triangle_size_maximation)
+    _planeCalcMaxSpanning =
+        std::make_shared<PlaneEstimationCalcMaxSpanningTriangle>(
+            _parameters->do_publish_points);
+  else
+    _planeCalcMaxSpanning = NULL;
+  // Plane planarity checker if the plane is constructed by using exactly 3
+  // points
+  if (_parameters->do_check_triangleplanar_condition) {
+    _checkPlanarTriangle = std::make_shared<PlaneEstimationCheckPlanar>(
+        _parameters->triangleplanar_crossnorm_treshold);
+  } else
+    this->_checkPlanarTriangle = NULL;
 
-    Logger::Instance().setEnabled(_parameters->do_logging);
+  Logger::Instance().setEnabled(_parameters->do_logging);
 
-    // camera stuff
-    _imgWitdh = _parameters->image_width;
-    _imgHeight = _parameters->image_height;
+  // camera stuff
+  _imgWitdh = _parameters->image_width;
+  _imgHeight = _parameters->image_height;
 
-    _isInitialized = true;
-    return true;
+  _isInitialized = true;
+  return true;
 }
-
 
 bool DepthEstimator::InitConfig(const std::string& filePath,
                                 const bool printparams) {
@@ -219,12 +212,59 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
     auto neighborFinder =
         std::dynamic_pointer_cast<NeighborFinderPixel>(_neighborFinder);
 
-    neighborFinder->InitializeLidarProjection(
-        this->_points._points_cs_image);
+    neighborFinder->InitializeLidarProjection(this->_points._points_cs_image);
   } else if (_parameters->neighbor_search_mode == 1) {
     // use kdd tree
     //		auto neighborFinder =
-    //std::dynamic_pointer_cast<NeighborFinderKdd>(_neighborFinder);
+    // std::dynamic_pointer_cast<NeighborFinderKdd>(_neighborFinder);
+    //		neighborFinder->InitKdTree(this->_points._points_cs_image_visible);
+  } else {
+    throw "neighbor_search_mode has the invalid value: " +
+        std::to_string(_parameters->neighbor_search_mode);
+  }
+
+  Logger::Instance().Log(Logger::MethodEnd, "DepthEstimator::setInputCloud");
+}
+
+void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
+                                   const Eigen::Vector4d& qCL_WXYZ,
+                                   const Eigen::Vector3d& rCL) {
+  using namespace std;
+
+  Logger::Instance().Log(Logger::MethodStart, "DepthEstimator::setInputCloud");
+
+  // Precheck
+  if (!_isInitialized) throw "call of 'setInputCloud' without 'initialize'";
+  _isInitializedPointCloud = true;
+
+  _points_interpolated.clear();
+  _points_interpolated_plane.clear();
+  _points_triangle_corners.clear();
+  _points_neighbors.clear();
+  _points_groundplane.clear();
+  _points.Clear();
+
+  // Change coordinate frame
+  cv::Mat_<float> R_CL;
+  quaternionToRotationMatrix(qCL_WXYZ, R_CL);
+  cv::Mat_<float> r_CL(3,1);
+
+  r_CL << static_cast<float>(rCL[0]), static_cast<float>(rCL[1]),
+      static_cast<float>(rCL[2]);
+      
+  Transform_Cloud_LidarToCamera(cloud, R_CL, r_CL);
+
+  if (_parameters->neighbor_search_mode == 0) {
+    // use next pixel neighbor search
+    // Transform the visible lidar points if neighbor search mode is pixel based
+    auto neighborFinder =
+        std::dynamic_pointer_cast<NeighborFinderPixel>(_neighborFinder);
+
+    neighborFinder->InitializeLidarProjection(this->_points._points_cs_image);
+  } else if (_parameters->neighbor_search_mode == 1) {
+    // use kdd tree
+    //		auto neighborFinder =
+    // std::dynamic_pointer_cast<NeighborFinderKdd>(_neighborFinder);
     //		neighborFinder->InitKdTree(this->_points._points_cs_image_visible);
   } else {
     throw "neighbor_search_mode has the invalid value: " +
@@ -235,7 +275,6 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
 }
 
 void DepthEstimator::getCloudCameraCs(Cloud::Ptr& pointCloud_cam_cs) {
-
   pointCloud_cam_cs->clear();
 
   for (auto pt : _points._points_cs_camera) {
@@ -323,10 +362,10 @@ void DepthEstimator::CutPointCloud(const Cloud::ConstPtr& cloud_in,
 }
 
 void DepthEstimator::getPointsCloudImageCs(
-    std::vector<cv::Point2f> &visiblePointsImageCs, std::vector<double> &depths) {
+    std::vector<cv::Point2f>& visiblePointsImageCs,
+    std::vector<double>& depths) {
   visiblePointsImageCs = this->_points._points_cs_image;
-  for (int i=0;i<visiblePointsImageCs.size();i++)
-  {
+  for (int i = 0; i < visiblePointsImageCs.size(); i++) {
     depths.push_back(getPointDepthCamVisible(i));
   }
 }
@@ -353,8 +392,7 @@ void DepthEstimator::CalculateDepth(const Cloud::ConstPtr& pointCloud,
   GroundPlane::Ptr tmp = nullptr;
   setInputCloud(pointCloud, tmp);
   Eigen::VectorXi depthTypes(points_image_cs.cols());
-  CalculateDepth(points_image_cs, points_depths, depthTypes,
-                 tmp);
+  CalculateDepth(points_image_cs, points_depths, depthTypes, tmp);
 }
 
 void DepthEstimator::CalculateDepth(const Cloud::ConstPtr& pointCloud,
@@ -372,6 +410,14 @@ void DepthEstimator::CalculateDepth(
   Eigen::VectorXi depthTypes(featurePoints_image_cs.cols());
   CalculateDepth(featurePoints_image_cs, points_depths, depthTypes,
                  ransacPlane);
+}
+
+void DepthEstimator::CalculateDepth(
+    const Eigen::Matrix2Xd& featurePoints_image_cs,
+    Eigen::VectorXd& points_depths) {
+  Eigen::VectorXi depthTypes(featurePoints_image_cs.cols());
+  GroundPlane::Ptr tmp = nullptr;
+  CalculateDepth(featurePoints_image_cs, points_depths, depthTypes, tmp);
 }
 
 void DepthEstimator::CalculateDepth(
@@ -397,7 +443,7 @@ void DepthEstimator::CalculateDepth(
 
     return;
   }
-//#pragma omp parallel for
+  //#pragma omp parallel for
   for (int i = 0; i < imgPointCount; i++) {
     double imgPointX = featurePoints_image_cs(0, i);
     double imgPointY = featurePoints_image_cs(1, i);
@@ -411,15 +457,18 @@ void DepthEstimator::CalculateDepth(
     points_depths(i) = depthPair.second;
     resultType(i) = depthPair.first;
 
-    if (_parameters->do_debug_singleFeatures && (depthPair.first != DepthResultType::Success || depthPair.second < 0))
-    {
-      std::cout << "\n" << i  << "th feature w/ result " << DepthResultTypeStrings[depthPair.first] << "\n";
+    if (_parameters->do_debug_singleFeatures &&
+        (depthPair.first != DepthResultType::Success || depthPair.second < 0)) {
+      std::cout << "\n"
+                << i << "th feature w/ result "
+                << DepthResultTypeStrings[depthPair.first] << "\n";
     }
-      /*
-      for (auto pt : stats->_neighbors3d)
-      {
-        std::cout << "\nneigbor " << std::get<0>(pt) << ", " << std::get<1>(pt) << ", "<< std::get<2>(pt);
-      }*/
+    /*
+    for (auto pt : stats->_neighbors3d)
+    {
+      std::cout << "\nneigbor " << std::get<0>(pt) << ", " << std::get<1>(pt) <<
+    ", "<< std::get<2>(pt);
+    }*/
   }
 
   if (_parameters->do_depth_calc_statistics) {
@@ -519,18 +568,21 @@ bool DepthEstimator::CalculateNeighbors(
 
   // get the indices of the neighbors in the image
   this->_neighborFinder->getNeighbors(
-      featurePoint_image_cs, this->_points._points_cs_camera, neighborIndicesCut, calcStats, scaleX, scaleY);
+      featurePoint_image_cs, this->_points._points_cs_camera,
+      neighborIndicesCut, calcStats, scaleX, scaleY);
 
   // todo: remove when debugging is done
-  //if (_parameters->do_logging) {
-  for (int i=0;i<neighborIndicesCut.size();i++) {
+  // if (_parameters->do_logging) {
+  for (int i = 0; i < neighborIndicesCut.size(); i++) {
     cv::Point pt = this->_points._points_cs_image[neighborIndicesCut[i]];
-    this->_points_neighbors.push_back(this->_points._points_cs_image[neighborIndicesCut[i]]);
+    this->_points_neighbors.push_back(
+        this->_points._points_cs_image[neighborIndicesCut[i]]);
   }
   //}
 
   // get the 3D neighbor points from the pointcloud using the given indices
-  this->_neighborFinder->getNeighbors(this->_points._points_cs_camera, neighborIndicesCut, neighbors);
+  this->_neighborFinder->getNeighbors(this->_points._points_cs_camera,
+                                      neighborIndicesCut, neighbors);
 
   return neighbors.size() >= (uint)_parameters->radiusSearch_count_min;
 }
@@ -572,7 +624,7 @@ bool DepthEstimator::CalculateNearestPoint(
 
 bool DepthEstimator::CalculateDepthSegmentation(
     const std::vector<Eigen::Vector3d>& neighbors,
-    const std::vector<uint16_t >& neighborsIndexCut,
+    const std::vector<uint16_t>& neighborsIndexCut,
     std::vector<Eigen::Vector3d>& pointsSegmented,
     std::vector<int>& pointsSegmentedIndex,
     std::shared_ptr<DepthCalcStatsSinglePoint> calcStats) {
@@ -645,7 +697,7 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
       // use treshold
       pointsSegmented.push_back(neighbors[i]);
 
-// #pragma omp critical
+      // #pragma omp critical
       { _points_triangle_corners.push_back(neighbors[i]); }
     }
   }
@@ -697,13 +749,13 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
   //	Logger::Instance().PrintEigenVector(pos1, "Mean segmented");
   //	Logger::Instance().PrintEigenVector(pos2, "Mean all");
   //	std::cout << "Sizes: " << pointsSegmented.size() << "/" <<
-  //neighbors.size() << std::endl;
+  // neighbors.size() << std::endl;
 
   // calculate if the distance of the mean point is under a treshold
 
   //	Eigen::Vector3d point_lidar_cs = _transform_cam_to_lidar * pos1;
   //	pcl::PointXYZ point(point_lidar_cs.x(), point_lidar_cs.y(),
-  //point_lidar_cs.z());
+  // point_lidar_cs.z());
   //	double distance = pcl::pointToPlaneDistance(point, planeCoeffs);
   //
   //	if (distance > treshold)
@@ -715,7 +767,7 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
   //	{
   //		Eigen::Vector3d point_lidar_cs = _transform_cam_to_lidar * pos2;
   //		pcl::PointXYZ point(point_lidar_cs.x(), point_lidar_cs.y(),
-  //point_lidar_cs.z());
+  // point_lidar_cs.z());
   //		double distance = pcl::pointToPlaneDistance(point, planeCoeffs);
   //
   //		if (distance > treshold)
@@ -735,7 +787,9 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
   using namespace std;
 
   // Get the spanning triangle from lidar points
-  int corner1 = 0; int corner2 = 1; int corner3 = 2;
+  int corner1 = 0;
+  int corner2 = 1;
+  int corner3 = 2;
 
   if (!_parameters->do_use_PCA && (this->_planeCalcMaxSpanning != nullptr)) {
     if (!this->_planeCalcMaxSpanning->CalculatePlaneCorners(
@@ -749,7 +803,9 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
   }
 
   if (!_parameters->do_use_PCA && (_checkPlanarTriangle != nullptr)) {
-    if (!_checkPlanarTriangle->CheckPlanar(pointsSegmented[corner1], pointsSegmented[corner2], pointsSegmented[corner3])) {
+    if (!_checkPlanarTriangle->CheckPlanar(pointsSegmented[corner1],
+                                           pointsSegmented[corner2],
+                                           pointsSegmented[corner3])) {
       return std::pair<DepthResultType, double>(
           DepthResultType::TriangleNotPlanar, -1);
     }
@@ -823,7 +879,8 @@ std::pair<DepthResultType, double> DepthEstimator::CalculateDepthSegmented(
           DepthResultType::PlaneViewrayNotOrthogonal, -1);
   } else {
     if (!_linePlaneIntersection->GetIntersectionDistance(
-        pointsSegmented[corner1], pointsSegmented[corner2], pointsSegmented[corner3], viewingRaySupportPoint,
+            pointsSegmented[corner1], pointsSegmented[corner2],
+            pointsSegmented[corner3], viewingRaySupportPoint,
             viewingRayDirection, depth))
       return std::pair<DepthResultType, double>(
           DepthResultType::PlaneViewrayNotOrthogonal, -1);
@@ -894,7 +951,9 @@ void DepthEstimator::LogDepthCalcStats(const DepthResultType depthResult) {
   }
 }
 
-void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_lidar_cs) {
+void DepthEstimator::Transform_Cloud_LidarToCamera(
+    const Cloud::ConstPtr& cloud_lidar_cs, const cv::Mat_<float>& R_CL,
+    const cv::Mat_<float>& r_CL) {
   Logger::Instance().Log(Logger::MethodStart,
                          "DepthEstimator::Transform_Cloud_LidarToCamera");
 
@@ -905,47 +964,58 @@ void DepthEstimator::Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_
                          "DepthEstimator::Transform_Cloud_LidarToCamera::Map");
 
   _points._points_cs_camera.reserve(cloud_lidar_cs->width);
-  for (auto pt : *cloud_lidar_cs)
-  {
-    cv::Point3f p(pt.x,pt.y,pt.z);
+  for (auto pt : *cloud_lidar_cs) {
+    cv::Point3f p(pt.x, pt.y, pt.z);
     _points._points_cs_camera.push_back(p);
   }
 
   Logger::Instance().Log(Logger::MethodEnd,
                          "DepthEstimator::Transform_Cloud_LidarToCamera::Map");
 
-  Logger::Instance().Log(Logger::MethodStart,
-                         "DepthEstimator::Transform_Cloud_LidarToCamera::CamstuffCV");
+  Logger::Instance().Log(
+      Logger::MethodStart,
+      "DepthEstimator::Transform_Cloud_LidarToCamera::CamstuffCV");
 
-  _camera->getImagePoints(_points._points_cs_camera, _points._points_cs_image);
+  _camera->getImagePoints(_points._points_cs_camera, _points._points_cs_image,
+                          R_CL, r_CL);
 
-  Logger::Instance().Log(Logger::MethodEnd,
-                         "DepthEstimator::Transform_Cloud_LidarToCamera::CamstuffCV");
+  Logger::Instance().Log(
+      Logger::MethodEnd,
+      "DepthEstimator::Transform_Cloud_LidarToCamera::CamstuffCV");
 
-  Logger::Instance().Log(Logger::MethodStart,
-                         "DepthEstimator::Transform_Cloud_LidarToCamera::AssignmentShit");
+  Logger::Instance().Log(
+      Logger::MethodStart,
+      "DepthEstimator::Transform_Cloud_LidarToCamera::AssignmentShit");
 
   bool removalTracker[_points._points_cs_image.size()];
-  int i=0;
-  for (auto pt : _points._points_cs_image)
-  {
+  int i = 0;
+  for (auto pt : _points._points_cs_image) {
     if (pt.x < 0 || pt.x >= _imgWitdh || pt.y < 0 || pt.y >= _imgHeight)
       removalTracker[i] = true;
     i++;
   }
   int j = -1;
   _points._points_cs_image.erase(
-      std::remove_if(_points._points_cs_image.begin(), _points._points_cs_image.end(),
-          [this, &j, &removalTracker](const cv::Point2f& pt) {j++;return removalTracker[j];}),
-          _points._points_cs_image.end());
+      std::remove_if(_points._points_cs_image.begin(),
+                     _points._points_cs_image.end(),
+                     [this, &j, &removalTracker](const cv::Point2f& pt) {
+                       j++;
+                       return removalTracker[j];
+                     }),
+      _points._points_cs_image.end());
   int k = -1;
   _points._points_cs_camera.erase(
-      std::remove_if(_points._points_cs_camera.begin(), _points._points_cs_camera.end(),
-          [&removalTracker, &k](const cv::Point3f& pt){k++;return removalTracker[k];}),
-          _points._points_cs_camera.end());
+      std::remove_if(_points._points_cs_camera.begin(),
+                     _points._points_cs_camera.end(),
+                     [&removalTracker, &k](const cv::Point3f& pt) {
+                       k++;
+                       return removalTracker[k];
+                     }),
+      _points._points_cs_camera.end());
 
-  Logger::Instance().Log(Logger::MethodEnd,
-                         "DepthEstimator::Transform_Cloud_LidarToCamera::AssignmentShit");
+  Logger::Instance().Log(
+      Logger::MethodEnd,
+      "DepthEstimator::Transform_Cloud_LidarToCamera::AssignmentShit");
 
   // Debug info
   Logger::Instance().Log(Logger::MethodEnd,

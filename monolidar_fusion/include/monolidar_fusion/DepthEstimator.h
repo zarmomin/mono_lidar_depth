@@ -92,6 +92,12 @@ public:
     void setInputCloud(const Cloud::ConstPtr& pointCloud, GroundPlane::Ptr& ransacPlane);
 
     /*
+     * Sets the lidar pointcloud and transforms the included points into camera coordinates
+     * @param pointCloud pointcloud from velodyne in lidar cs
+     */
+    void setInputCloud(const Cloud::ConstPtr& pointCloud, const Eigen::Vector4d& qCL_WXYZ, const Eigen::Vector3d& rCL);
+
+    /*
      * Gets the parameter object
      */
     std::shared_ptr<DepthEstimatorParameters> getParameters() {
@@ -175,7 +181,7 @@ public:
   void CalculateDepth(const Cloud::ConstPtr& pointCloud,
                       const Eigen::Matrix2Xd& points_image_cs,
                       Eigen::VectorXd& points_depths);
-    /*
+    /*qCL
     * Calculates the depth of a set of given points
     * The pointcloud and the image must be synchronized in time
     * @param pointCloud [in] 3D pointcloud. Only points inside the camera view cone will be considered
@@ -198,6 +204,15 @@ public:
     void CalculateDepth(const Eigen::Matrix2Xd& points_image_cs,
                         Eigen::VectorXd& points_depths,
                         const GroundPlane::Ptr& ransacPlane);
+
+  /*
+   * Calculates the depth of a set of given points
+   * @param points_image_cs [in] Points in image coordinates for which the depth will be calculated. Stored in row
+   * order
+   * @param points_depths [out] Depths of the given points in meters
+   */
+    void CalculateDepth(const Eigen::Matrix2Xd& points_image_cs,
+                      Eigen::VectorXd& points_depths);
 
     /*
      * Calculates the depth of a set of given points
@@ -297,7 +312,9 @@ private:
      * Transforms the pointcloud (lidar cs) into the camera cs and projects it's points into the image frame
      * @param lidar_to_cam Affine transformation from lidar to camera cooridnates#include <opencv2/core.hpp>
      */
-    void Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_lidar_cs);
+    void Transform_Cloud_LidarToCamera(const Cloud::ConstPtr &cloud_lidar_cs,
+        const cv::Mat_<float>& R_CL  = cv::Mat_<float>::eye(3,3),
+        const cv::Mat_<float>& r_CL = cv::Mat_<float>::zeros(3,1));
 
     /**
      * Writes a lidar point cloud into a different format.

@@ -112,15 +112,6 @@ void DepthEstimatorParameters::fromFile(const std::string& filePath) {
     do_logging = (int)fSettings[str_do_logging];
 
     // camera stuff
-    float qx = (float)fSettings[str_qCL_x];
-    float qy = (float)fSettings[str_qCL_y];
-    float qz = (float)fSettings[str_qCL_z];
-    float qw = (float)fSettings[str_qCL_w];
-    float rx = (float)fSettings[str_BrCL_x];
-    float ry = (float)fSettings[str_BrCL_y];
-    float rz = (float)fSettings[str_BrCL_z];
-    q_C_L = (cv::Mat_<float>(4,1) << qx, qy, qz, qw);
-    B_r_C_L = (cv::Mat_<float>(3,1) << rx, ry, rz);
     image_width = (int)fSettings[str_image_width];
     image_height = (int)fSettings[str_image_height];
 }
