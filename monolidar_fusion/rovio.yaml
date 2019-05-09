@@ -11,10 +11,10 @@ neighbor_search_mode: 0 # 0-> take neighbor pixels in image plane using a rectan
 
 # if a kdd-tree is used (neighbor_search_mode = 1) then this is the neighbor search radius with the given feature point in the center
 # if the neighbors are selected using a rectangle on the image plane then this parameter describes the width of the rectangle
-pixelarea_search_witdh: 10
+pixelarea_search_witdh: 30
 
 # height of the rectangle (only used for selection rect)
-pixelarea_search_height: 10
+pixelarea_search_height: 30
 
 # offset of the rectangle in x (only used for selection rect)
 # The feature point is centered in the middle of the rect when both offset variables are 0

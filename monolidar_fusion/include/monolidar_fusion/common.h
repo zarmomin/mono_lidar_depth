@@ -14,6 +14,11 @@ namespace Mono_Lidar {
     return sqrt(pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
   }
 
+  inline double normSquared(const cv::Point3f& pt)
+  {
+    return pt.x * pt.x + pt.y * pt.y + pt.z * pt.z;
+  }
+
   inline void quaternionToRotationMatrix(float x, float y, float z, float w, cv::Mat_<float> &R) {
     const float tx  = 2.0f*x;
     const float ty  = 2.0f*y;

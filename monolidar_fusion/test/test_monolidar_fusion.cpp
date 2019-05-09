@@ -466,7 +466,7 @@ TEST(NeigborFinder, findByPixel) {
   std::vector<cv::Point2f> points_2d_projected;
   cam->getImagePoints(points_3d_cam, points_2d_projected);
 
-  neighborFinder.InitializeLidarProjection(points_2d_orig);
+  neighborFinder.InitializeLidarProjection(points_2d_orig, points_3d_cam);
 
   // get neighbors from tested method
   for (int i = 0; i < point_count; i++) {

@@ -205,6 +205,47 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
 
   // Change coordinate frame
   Transform_Cloud_LidarToCamera(cloud);
+  try{
+    if (_parameters->neighbor_search_mode == 0) {
+      // use next pixel neighbor search
+      // Transform the visible lidar points if neighbor search mode is pixel based
+      auto neighborFinder =
+          std::dynamic_pointer_cast<NeighborFinderPixel>(_neighborFinder);
+
+      neighborFinder->InitializeLidarProjection(this->_points._points_cs_image, this->_points._points_cs_camera);
+    } else if (_parameters->neighbor_search_mode == 1) {
+      // use kdd tree
+      //		auto neighborFinder =
+      // std::dynamic_pointer_cast<NeighborFinderKdd>(_neighborFinder);
+      //		neighborFinder->InitKdTree(this->_points._points_cs_image_visible);
+    } else {
+      throw "neighbor_search_mode has the invalid value: " +
+          std::to_string(_parameters->neighbor_search_mode);
+    }
+  } catch (...)
+  {
+    std::cout << "\nError here.\n";
+  }
+  Logger::Instance().Log(Logger::MethodEnd, "DepthEstimator::setInputCloud");
+}
+
+void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud) {
+  using namespace std;
+
+  Logger::Instance().Log(Logger::MethodStart, "DepthEstimator::setInputCloud");
+
+  // Precheck
+  if (!_isInitialized) throw "call of 'setInputCloud' without 'initialize'";
+  _isInitializedPointCloud = true;
+
+  _points_interpolated.clear();
+  _points_interpolated_plane.clear();
+  _points_triangle_corners.clear();
+  _points_neighbors.clear();
+  _points_groundplane.clear();
+  _points.Clear();
+
+  Transform_Cloud_LidarToCamera(cloud);
 
   if (_parameters->neighbor_search_mode == 0) {
     // use next pixel neighbor search
@@ -212,7 +253,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
     auto neighborFinder =
         std::dynamic_pointer_cast<NeighborFinderPixel>(_neighborFinder);
 
-    neighborFinder->InitializeLidarProjection(this->_points._points_cs_image);
+    neighborFinder->InitializeLidarProjection(this->_points._points_cs_image, this->_points._points_cs_camera);
   } else if (_parameters->neighbor_search_mode == 1) {
     // use kdd tree
     //		auto neighborFinder =
@@ -251,7 +292,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
 
   r_CL << static_cast<float>(rCL[0]), static_cast<float>(rCL[1]),
       static_cast<float>(rCL[2]);
-      
+
   Transform_Cloud_LidarToCamera(cloud, R_CL, r_CL);
 
   if (_parameters->neighbor_search_mode == 0) {
@@ -260,7 +301,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
     auto neighborFinder =
         std::dynamic_pointer_cast<NeighborFinderPixel>(_neighborFinder);
 
-    neighborFinder->InitializeLidarProjection(this->_points._points_cs_image);
+    neighborFinder->InitializeLidarProjection(this->_points._points_cs_image, this->_points._points_cs_camera);
   } else if (_parameters->neighbor_search_mode == 1) {
     // use kdd tree
     //		auto neighborFinder =
@@ -445,23 +486,29 @@ void DepthEstimator::CalculateDepth(
   }
   //#pragma omp parallel for
   for (int i = 0; i < imgPointCount; i++) {
-    double imgPointX = featurePoints_image_cs(0, i);
-    double imgPointY = featurePoints_image_cs(1, i);
-    Eigen::Vector2d imgPoint(imgPointX, imgPointY);
+    //double imgPointX = featurePoints_image_cs(0, i);
+    //double imgPointY = featurePoints_image_cs(1, i);
+    const Eigen::Vector2d& imgPoint = featurePoints_image_cs.col(i);
+    if (imgPoint.squaredNorm() > 0)
+    {
+      std::shared_ptr<DepthCalcStatsSinglePoint> stats = NULL;
 
-    std::shared_ptr<DepthCalcStatsSinglePoint> stats = NULL;
+      if (_parameters->do_debug_singleFeatures)
+        stats = std::make_shared<DepthCalcStatsSinglePoint>();
+      auto depthPair = this->CalculateDepth(imgPoint, ransacPlane, stats);
+      points_depths(i) = depthPair.second;
+      resultType(i) = depthPair.first;
 
-    if (_parameters->do_debug_singleFeatures)
-      stats = std::make_shared<DepthCalcStatsSinglePoint>();
-    auto depthPair = this->CalculateDepth(imgPoint, ransacPlane, stats);
-    points_depths(i) = depthPair.second;
-    resultType(i) = depthPair.first;
-
-    if (_parameters->do_debug_singleFeatures &&
-        (depthPair.first != DepthResultType::Success || depthPair.second < 0)) {
-      std::cout << "\n"
-                << i << "th feature w/ result "
-                << DepthResultTypeStrings[depthPair.first] << "\n";
+      if (_parameters->do_debug_singleFeatures &&
+          (depthPair.first != DepthResultType::Success || depthPair.second < 0)) {
+        std::cout << "\n"
+                  << i << "th feature w/ result "
+                  << DepthResultTypeStrings[depthPair.first] << "\n";
+      }
+    }
+    else{
+      points_depths(i) = -1;
+      resultType(i) = DepthResultType::Unspecified;
     }
     /*
     for (auto pt : stats->_neighbors3d)

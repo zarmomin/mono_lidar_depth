@@ -22,7 +22,7 @@ public:
 
     void Initialize(std::shared_ptr<DepthEstimatorParameters>& parameters) override;
 
-    void InitializeLidarProjection(const std::vector<cv::Point2f> &lidarPoints_image_cs);
+    void InitializeLidarProjection(const std::vector<cv::Point2f> &lidarPoints_image_cs, const std::vector<cv::Point3f> &lidarPointsCamera);
 
     // gets the neighbors of a given feature point including the point itself
     void getNeighbors(const Eigen::Vector2d &featurePoint_image_cs,

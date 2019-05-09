@@ -5,6 +5,7 @@
  *      Author: wilczynski
  */
 
+#include "monolidar_fusion/common.h"
 #include "monolidar_fusion/NeighborFinderPixel.h"
 #include "monolidar_fusion/Logger.h"
 #include <opencv2/highgui/highgui.hpp>
@@ -28,15 +29,31 @@ void NeighborFinderPixel::Initialize(std::shared_ptr<DepthEstimatorParameters>& 
     _pixelSearchHeight = _parameters->pixelarea_search_height;
 }
 
-void NeighborFinderPixel::InitializeLidarProjection(const std::vector<cv::Point2f> &lidarPoints_image_cs) {
+void NeighborFinderPixel::InitializeLidarProjection(const std::vector<cv::Point2f> &lidarPoints_image_cs,
+    const std::vector<cv::Point3f> &lidarPointsCamera) {
+
     Logger::Instance().Log(Logger::MethodStart, "DepthEstimator::TransformLidarPointsToImageFrame");
     _img_points_lidar = cv::Mat::zeros(_imgHeight, _imgWitdth, CV_16U);
     // todo: nico this currently rejects the upper left corner pixel
     for (uint16_t i=0; i < lidarPoints_image_cs.size();i++)
     {
         const cv::Point2f pt = lidarPoints_image_cs[i];
-        _img_points_lidar.at<uint16_t>(pt) = i;
+        uint16_t index = _img_points_lidar.at<uint16_t>(pt);
 
+        // choose the point nearest to the camera
+        if (index > 0u){
+          float f1 = normSquared(lidarPointsCamera[i]);
+
+          float f2 = normSquared(lidarPointsCamera[index]);
+
+          if (f1 < f2)
+          {
+            _img_points_lidar.at<uint16_t>(pt) = i;
+          }
+        }
+        else{
+            _img_points_lidar.at<uint16_t>(pt) = i;
+        }
     }
     Logger::Instance().Log(Logger::MethodEnd, "DepthEstimator::TransformLidarPointsToImageFrame");
 }

@@ -98,6 +98,12 @@ public:
     void setInputCloud(const Cloud::ConstPtr& pointCloud, const Eigen::Vector4d& qCL_WXYZ, const Eigen::Vector3d& rCL);
 
     /*
+     * Sets the lidar pointcloud and transforms the included points into camera coordinates
+     * @param pointCloud pointcloud from velodyne in lidar cs
+     */
+    void setInputCloud(const Cloud::ConstPtr& pointCloud);
+
+    /*
      * Gets the parameter object
      */
     std::shared_ptr<DepthEstimatorParameters> getParameters() {
