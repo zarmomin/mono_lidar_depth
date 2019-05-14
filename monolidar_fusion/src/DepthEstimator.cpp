@@ -471,19 +471,19 @@ void DepthEstimator::CalculateDepth(
   using namespace std;
 
   // Precheck
-  if (!_isInitializedPointCloud) {
-    throw "call of 'CalculateDepth' without 'SetInputCloud'";
-  }
-  int imgPointCount = featurePoints_image_cs.cols();
-
-  if (_parameters->do_depth_calc_statistics) _depthCalcStats.Clear();
-
-  if (_parameters->set_all_depths_to_zero) {
+  if (!_isInitializedPointCloud || _parameters->set_all_depths_to_zero) {
+    std::cout << "\nDepthEstimator: need to set pointcloud first";
     resultType.setConstant(1);
     points_depths.setConstant(-1);
 
     return;
   }
+
+  int imgPointCount = featurePoints_image_cs.cols();
+
+  if (_parameters->do_depth_calc_statistics) _depthCalcStats.Clear();
+
+
   //#pragma omp parallel for
   for (int i = 0; i < imgPointCount; i++) {
     //double imgPointX = featurePoints_image_cs(0, i);
