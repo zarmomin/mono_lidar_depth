@@ -24,7 +24,7 @@ bool PointHistogram::FilterPointsMinDistBlob(const std::vector<Eigen::Vector3d>&
                                              const std::shared_ptr<DepthCalcStatsSinglePoint>& debugStats) {
     // check precondition
     if (inputPoints.size() != inputDepths.rows()) {
-        throw "ERROR IN PointHistogram::FilterPointsMinDistBlob: size of inputPoints and inputDepths are uneqal.";
+        std::cout << "ERROR IN PointHistogram::FilterPointsMinDistBlob: size of inputPoints and inputDepths are uneqal.";
     }
     // Get Borders of the first local maxium bin
     lowerBorder = -1;

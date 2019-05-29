@@ -18,7 +18,7 @@ void NeighborFinderKdd::InitKdTree(const Eigen::Matrix2Xd& points_cs_image_visib
 
 	// Precheck
 //	if (!_isInitializedPointCloud)
-//			throw "call of 'InitKdTree' without 'setInputCloud'";
+//			std::cout << "call of 'InitKdTree' without 'setInputCloud'";
 //	_isInitializedKddTree = true;
 
 	auto pointsVisibleF = points_cs_image_visible.cast<float>().transpose();
@@ -42,7 +42,7 @@ void NeighborFinderKdd::getNeighbors(const Eigen::Vector2d& featurePoint_image_c
 		const float scaleWidth, const float scaleHeight)
 {
 //	if (!_isInitializedPointCloud)
-//		throw "call of 'CalculateDepth' without 'InitKdTree'";
+//		std::cout << "call of 'CalculateDepth' without 'InitKdTree'";
 
 	// list of point indices of the pointcloud (of points which are visible in the image)
 	std::vector<std::vector<int>> indices_vec;
@@ -64,7 +64,7 @@ void NeighborFinderKdd::getNeighbors(const Eigen::Vector2d& featurePoint_image_c
 	// Get the neighbors
 	uint neighborsCount;
 	if (doNNSearch && doRadiusSearch)
-		throw "NN and Radius search is selected at once. Check the params file and select only one of both methods.";
+		std::cout << "NN and Radius search is selected at once. Check the params file and select only one of both methods.";
 	else if (doNNSearch)
 	{
 		neighborsCount = _parameters->nnSearch_count;
@@ -77,7 +77,7 @@ void NeighborFinderKdd::getNeighbors(const Eigen::Vector2d& featurePoint_image_c
 	}
 	else
 	{
-		throw "No method Kd tree search selected. Check config file.";
+		std::cout << "No method Kd tree search selected. Check config file.";
 	}
 
 	// Extract the desired points

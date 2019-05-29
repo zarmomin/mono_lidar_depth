@@ -39,7 +39,7 @@ namespace Mono_Lidar {
 
 bool DepthEstimator::Initialize(const Eigen::Matrix3d& K) {
   if (!_isInitializedConfig) {
-    throw "Call 'InitConfig' before calling 'Initialize'.";
+    std::cout << "Call 'InitConfig' before calling 'Initialize'.";
   }
   _camera = std::make_shared<CameraPinhole>(
       _imgWitdh, _imgHeight, static_cast<float>(K(0, 0)),
@@ -51,7 +51,7 @@ bool DepthEstimator::Initialize(const Eigen::Matrix3d& K) {
 bool DepthEstimator::Initialize(const Eigen::Matrix3d& K,
                                 const Eigen::VectorXd& d) {
   if (!_isInitializedConfig) {
-    throw "Call 'InitConfig' before calling 'Initialize'.";
+    std::cout << "Call 'InitConfig' before calling 'Initialize'.";
   }
 
   cv::Mat_<float> d_(d.rows(), 1);
@@ -67,7 +67,7 @@ bool DepthEstimator::Initialize(const Eigen::Matrix3d& K,
 
 bool DepthEstimator::Initialize(const std::shared_ptr<CameraPinhole>& camera) {
   if (!_isInitializedConfig) {
-    throw "Call 'InitConfig' before calling 'Initialize'.";
+    std::cout << "Call 'InitConfig' before calling 'Initialize'.";
   }
   _camera = camera;
   return true;
@@ -86,7 +86,7 @@ bool DepthEstimator::InitializeParameters() {
     //		this->_neighborFinder = std::make_shared<NeighborFinderKdd>();
     //		this->_neighborFinder->Initialize(_parameters);
   } else
-    throw "neighbor_search_mode has the invalid value: " +
+    std::cout << "neighbor_search_mode has the invalid value: " +
         std::to_string(_parameters->neighbor_search_mode);
   // Initialize treshold depth module
   if (_parameters->treshold_depth_enabled) {
@@ -126,7 +126,7 @@ bool DepthEstimator::InitializeParameters() {
       this->_roadDepthEstimator =
           std::make_shared<RoadDepthEstimatorMEstimator>();
     else
-      throw "No road depth estimator selected.";
+      std::cout << "No road depth estimator selected.";
 
     if (this->_tresholdDepthGlobal != NULL)
       this->_roadDepthEstimator->EnableTresholdDepthGlobal(
@@ -193,7 +193,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
   Logger::Instance().Log(Logger::MethodStart, "DepthEstimator::setInputCloud");
 
   // Precheck
-  if (!_isInitialized) throw "call of 'setInputCloud' without 'initialize'";
+  if (!_isInitialized) std::cout << "call of 'setInputCloud' without 'initialize'";
   _isInitializedPointCloud = true;
 
   _points_interpolated.clear();
@@ -219,7 +219,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
       // std::dynamic_pointer_cast<NeighborFinderKdd>(_neighborFinder);
       //		neighborFinder->InitKdTree(this->_points._points_cs_image_visible);
     } else {
-      throw "neighbor_search_mode has the invalid value: " +
+      std::cout << "neighbor_search_mode has the invalid value: " +
           std::to_string(_parameters->neighbor_search_mode);
     }
   } catch (...)
@@ -235,7 +235,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud) {
   Logger::Instance().Log(Logger::MethodStart, "DepthEstimator::setInputCloud");
 
   // Precheck
-  if (!_isInitialized) throw "call of 'setInputCloud' without 'initialize'";
+  if (!_isInitialized) std::cout << "call of 'setInputCloud' without 'initialize'";
   _isInitializedPointCloud = true;
 
   _points_interpolated.clear();
@@ -260,7 +260,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud) {
     // std::dynamic_pointer_cast<NeighborFinderKdd>(_neighborFinder);
     //		neighborFinder->InitKdTree(this->_points._points_cs_image_visible);
   } else {
-    throw "neighbor_search_mode has the invalid value: " +
+    std::cout << "neighbor_search_mode has the invalid value: " +
         std::to_string(_parameters->neighbor_search_mode);
   }
 
@@ -275,7 +275,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
   Logger::Instance().Log(Logger::MethodStart, "DepthEstimator::setInputCloud");
 
   // Precheck
-  if (!_isInitialized) throw "call of 'setInputCloud' without 'initialize'";
+  if (!_isInitialized) std::cout << "call of 'setInputCloud' without 'initialize'";
   _isInitializedPointCloud = true;
 
   _points_interpolated.clear();
@@ -308,7 +308,7 @@ void DepthEstimator::setInputCloud(const Cloud::ConstPtr& cloud,
     // std::dynamic_pointer_cast<NeighborFinderKdd>(_neighborFinder);
     //		neighborFinder->InitKdTree(this->_points._points_cs_image_visible);
   } else {
-    throw "neighbor_search_mode has the invalid value: " +
+    std::cout << "neighbor_search_mode has the invalid value: " +
         std::to_string(_parameters->neighbor_search_mode);
   }
 
@@ -714,7 +714,7 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
     GroundPlane::Ptr ransacPlane) {
   // check precondition
   if (neighbors.size() != neighborIndices.size()) {
-    throw(
+    std::cout <<(
         "DepthEstimator::CalculateDepthSegmentationPlane: neighbors.size() (" +
         std::to_string(neighbors.size()) + ") != neighborIndices.size() (" +
         std::to_string(neighborIndices.size()) + ")");
@@ -724,7 +724,6 @@ bool DepthEstimator::CalculateDepthSegmentationPlane(
 
   if (ransacPlane == nullptr) {
     std::cout << "Ransac plane is nullptr" << std::endl;
-    throw std::runtime_error("Ransac plane is nullptr");
   }
   const auto& planeCoeffs = ransacPlane->getModelCoeffs();
 

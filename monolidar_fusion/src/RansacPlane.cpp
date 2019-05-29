@@ -75,7 +75,6 @@ void RansacPlane::CalculateInliersPlane(const Cloud::ConstPtr& pointCloud) {
         for (const auto& el : pointCloud->points) {
             std::cout << el.x << " " << el.y << " " << el.z << " " << el.intensity << std::endl;
         }
-        throw ExceptionPclInvalid();
     }
 
     // std::cout << "Ransac: pcl size after filter=" << cloudFiltered->points.size() << std::endl;
@@ -240,7 +239,6 @@ void SemanticPlane::CalculateInliersPlane(const Cloud::ConstPtr& cloud) {
     // Test if we have enough data.
     if (projected_points.size() < 3) {
         std::cout << "In SemanticPlane: Not enough_points for plane fit.!!!!!!!!!!" << std::endl;
-        throw ExceptionPclInvalid();
     }
 
     // Get indices.

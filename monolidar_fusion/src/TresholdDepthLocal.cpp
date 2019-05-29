@@ -39,8 +39,6 @@ eTresholdResult TresholdDepthLocal::CheckInBounds(const std::vector<Eigen::Vecto
     } else if (_toleranceType == eTresholdToleranceType::absolute) {
         borderLow = minZ - _toleranceValue;
         borderHigh = maxZ + _toleranceValue;
-    } else {
-        throw "Undefined treshold tolerance mode for tresholdDepthLocal";
     }
 
     // check if depth lies inside tolerance
@@ -50,16 +48,12 @@ eTresholdResult TresholdDepthLocal::CheckInBounds(const std::vector<Eigen::Vecto
             return eTresholdResult::SmallerMin;
         } else if (_mode == eTresholdDepthMode::Adjust)
             depth = borderLow;
-        else
-            throw "Undefined treshold depth mode in config (for min): " + std::to_string(_mode);
     } else if (depth > borderHigh) {
         if (_mode == eTresholdDepthMode::Dispose) {
             depth = -1;
             return eTresholdResult::GreaterMax;
         } else if (_mode == eTresholdDepthMode::Adjust)
             depth = borderHigh;
-        else
-            throw "Undefined treshold depth mode in config (for max): " + std::to_string(_mode);
     }
 
     return eTresholdResult::InBounds;

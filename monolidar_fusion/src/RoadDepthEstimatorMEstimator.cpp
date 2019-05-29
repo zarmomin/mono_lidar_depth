@@ -31,7 +31,7 @@ std::pair<DepthResultType, double> RoadDepthEstimatorMEstimator::CalculateDepth(
     const std::vector<Eigen::Vector3d>& planePoints,
     Eigen::Vector3d& pointIntersection) {
     if (!_isPriorSet)
-        throw("Roadplane prior of mestimator has no been set before calling 'CalculateDepth'.");
+        std::cout <<("Roadplane prior of mestimator has no been set before calling 'CalculateDepth'.");
 
     // Estimate the plane through the given pointlist
     Eigen::Hyperplane<double, 3> planeEstimated;

@@ -21,7 +21,7 @@ void DepthEstimatorParameters::fromFile(const std::string& filePath) {
     cv::FileStorage fSettings(filePath, cv::FileStorage::READ);
 
     if (!fSettings.isOpened())
-        throw("Cant find settings file: " + filePath);
+        std::cout <<("Cant find settings file: " + filePath);
 
     // Nearest Neighbors search
     do_use_nearestNeighborSearch = (int)fSettings[str_do_use_nearestNeighborSearch];

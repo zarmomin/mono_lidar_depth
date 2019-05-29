@@ -324,7 +324,7 @@ int HelperLidarRowSegmentation::calculateNeighborPoints(const PointcloudData& po
                                                         const int maxPointCount,
                                                         std::vector<int>& pointsSegmentedIndex) {
     if (!_isInitialized)
-        throw "'HelperLidarRowSegmentation' not initialized. Call 'SegmentPoints' first.";
+        std::cout << "'HelperLidarRowSegmentation' not initialized. Call 'SegmentPoints' first.";
 
     // Get nearest Lidar-Point to the feature point
     const int nearestPointIndex = getNearestPoint(points._points_cs_image_visible, featurePoint, pointsSegmentedIndex);
