@@ -60,12 +60,6 @@
 #include "monolidar_fusion/camera_pinhole.h"
 #include "monolidar_fusion/common.h"
 
-// A google test function (uncomment the next function, add code and
-// change the names TestGroupName and TestName)
-// TEST(TestGroupName, TestName) {
-// TODO: Add your test code here
-//}
-
 namespace {
 
 Eigen::Vector2d project(Eigen::Vector3d p, Eigen::Matrix3d intrinsics) {
@@ -194,9 +188,7 @@ TEST(Interface, complete_run) {
 
   pcl::PointCloud<pcl::PointXYZI>::ConstPtr pointcloudpointer(
       new pcl::PointCloud<pcl::PointXYZI>(pointcloud));
-  Mono_Lidar::GroundPlane::Ptr groundplane = nullptr;
-  depthEstimator.CalculateDepth(pointcloudpointer, points_2d_orig, point_depths,
-                                groundplane);
+  depthEstimator.CalculateDepth(pointcloudpointer, points_2d_orig, point_depths);
   std::cout << "\nNumber of invalid point depths: " << (point_depths.array() < 0).count() << "\n";
 }
 
@@ -262,7 +254,6 @@ TEST(Interface, complete_run2) {
   }
   pcl::PointCloud<pcl::PointXYZI>::ConstPtr pointcloudpointer(
       new pcl::PointCloud<pcl::PointXYZI>(pointcloud));
-  // Mono_Lidar::GroundPlane::Ptr groundplane = nullptr;
   depthEstimator->CalculateDepth(pointcloudpointer, points_2d_orig,
                                  point_depths);
   std::cout << "\nNumber of invalid point depths: " << (point_depths.array() < 0).count() << "\n";
@@ -328,7 +319,6 @@ TEST(Interface, visiblePointRetrieval) {
   }
   pcl::PointCloud<pcl::PointXYZI>::ConstPtr pointcloudpointer(
       new pcl::PointCloud<pcl::PointXYZI>(pointcloud));
-  // Mono_Lidar::GroundPlane::Ptr groundplane = nullptr;
   depthEstimator->CalculateDepth(pointcloudpointer, points_2d_orig,
                                  point_depths);
   std::vector<cv::Point2f> visiblePoints;
@@ -346,79 +336,6 @@ TEST(Interface, visiblePointRetrieval) {
     ASSERT_TRUE(visiblePoints[i].x >= 0 && visiblePoints[i].x < img_width);
     ASSERT_TRUE(visiblePoints[i].y >= 0 && visiblePoints[i].y < img_height);
   }
-}
-
-TEST(camera, image_point_conversion) {
-  Eigen::Matrix3d intrinsics;
-  intrinsics << 395.872620767, 0.0, 372.495185619, 0.0, 395.786208753,
-      214.319312646, 0.0, 0.0, 1.0;
-  cv::Mat_<float> d_(4, 1);
-  d_ << -0.00453674705911, 0.00837778666974, 0.0272220038607, -0.0155084020782;
-  CameraPinhole camera =
-      CameraPinhole(720, 480, static_cast<float>(intrinsics(0, 0)),
-                    static_cast<float>(intrinsics(1, 1)),
-                    static_cast<float>(intrinsics(0, 2)),
-                    static_cast<float>(intrinsics(1, 2)), d_);
-  pcl::PointCloud<pcl::PointXYZI> laser_cloud;
-  readPointCloud(
-      "/home/nico/datasets/eschlikon/raww/1549469580.744550_cloud.pcd",
-      laser_cloud);
-  std::vector<cv::Point3f> points, points_inv;
-  std::vector<cv::Point2f> image_points, image_points_2;
-  for (auto pt : laser_cloud)
-  {
-    cv::Point3f p(pt.x,pt.y,pt.z);
-    points.push_back(p);
-  }
-  std::clock_t timeStart = std::clock();
-  camera.getImagePoints(points, image_points);
-  std::clock_t timeEnd = std::clock();
-  double deltaTime = (double)(timeEnd - timeStart) * 1000.0 / CLOCKS_PER_SEC;
-  std::cout << "\nNo trafo " << deltaTime << "\n";
-  ASSERT_EQ(laser_cloud.width, image_points.size());
-
-  // define some rotation / translation
-  float theta = 24.0 * M_PI / 180.0;
-  cv::Mat rvec = (cv::Mat_<float>(3,1) <<
-                                        0.4, 0.2, 0.8944) * theta;
-  cv::Mat R;
-  cv::Rodrigues(rvec, R);
-
-  cv::Mat tvec = (cv::Mat_<float>(3,1) <<
-                                        0.5, 0.38, 1.4);
-
-  // invert it
-  cv::Mat R_inv = R.t();
-  cv::Mat t_inv = -R_inv * tvec;
-
-  for (const cv::Point3f& pt : points)
-  {
-    cv::Mat pmat = (cv::Mat_<float>(3,1) << pt.x, pt.y, pt.z);
-    cv::Mat p_inv = R_inv * pmat + t_inv;
-    points_inv.push_back(cv::Point3f(p_inv.at<float>(0), p_inv.at<float>(1), p_inv.at<float>(2)));
-    cv::Mat pp = R * p_inv + tvec;
-    cv::Point3f pt_e(pp.at<float>(0), pp.at<float>(1), pp.at<float>(2));
-    ASSERT_NEAR(pt.x, pt_e.x, 1E-2);
-    ASSERT_NEAR(pt.y, pt_e.y, 1E-2);
-    ASSERT_NEAR(pt.z, pt_e.z, 1E-2);
-  }
-
-  // set rotation and translation
-  std::clock_t timeStart2 = std::clock();
-  camera.getImagePoints(points_inv, image_points_2, R, tvec);
-  std::clock_t timeEnd2 = std::clock();
-  double deltaTime2 = (double)(timeEnd2 - timeStart2) * 1000.0 / CLOCKS_PER_SEC;
-  std::cout << "\nTrafo " << deltaTime2 << "\n";
-  for (int i=0;i<image_points.size();i++)
-  {
-    const cv::Point2f& ip1 = image_points[i];
-    const cv::Point2f& ip2 = image_points_2[i];
-    if (ip1.x >= 0  && ip1.x < 720 && ip2.x >= 0  && ip2.x < 720 && ip1.y >= 0  && ip1.y < 480 && ip2.y >= 0  && ip2.y < 480) {
-      ASSERT_NEAR(ip1.x, ip2.x, 1E-2);
-      ASSERT_NEAR(ip1.y, ip2.y, 1E-2);
-    }
-  }
-
 }
 
 TEST(NeigborFinder, findByPixel) {
@@ -454,13 +371,6 @@ TEST(NeigborFinder, findByPixel) {
     cam->getViewingRays(ptt, dir);
     points_3d_cam.push_back(cv::Point3f(dir[0], dir[1], dir[2]));
   }
-
-  /*std::vector<cv::Point3f> points_3d_cam;
-  // init features depth
-  for (int i = 0; i < int(point_count); ++i) {
-      points_3d_cam.push_back(static_cast<float>((std::rand() % 10 + 1)) *
-  directions[i]);
-  }*/
 
   // project points on image plane again
   std::vector<cv::Point2f> points_2d_projected;

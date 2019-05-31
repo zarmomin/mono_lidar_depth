@@ -11,7 +11,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-
+/// > Exclusively used for testing and development
 class DepthEstimationWrapper{
  public:
   cv::Mat image;
@@ -20,12 +20,11 @@ class DepthEstimationWrapper{
   double lidar_time;
   double feature_time;
   Eigen::Matrix2Xd feature_points;
-  Mono_Lidar::GroundPlane::Ptr plane_placeholder;
   std::vector<double> rovio_depths;
   std::vector<int> rovio_indices;
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZI>> feature_point_cloud;
 
-  DepthEstimationWrapper() : plane_placeholder(nullptr) {
+  DepthEstimationWrapper() {
     feature_point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
     Eigen::Matrix3d intrinsics;
     intrinsics << 395.872620767, 0.0, 372.495185619,
@@ -62,7 +61,7 @@ class DepthEstimationWrapper{
       int n_features = feature_points.cols();
       Eigen::VectorXd depths(n_features);
       Eigen::VectorXi resultTypes(n_features);
-      depth_estimator.CalculateDepth(lidar_cloud, feature_points, depths, resultTypes, plane_placeholder);
+      depth_estimator.CalculateDepth(lidar_cloud, feature_points, depths, resultTypes);
 
       /// evaluate
       cv::Mat coloredImage;
@@ -121,12 +120,6 @@ class DepthEstimationWrapper{
 
       cv::imshow("image", coloredImage);
       cv::waitKey(0);
-
-      /*pcl::io::savePCDFile("/home/nico/datasets/eschlikon/raww/"+std::to_string(lidar_time)+"_cloud.pcd", *lidar_cloud);
-      pcl::io::savePCDFile("/home/nico/datasets/eschlikon/raww/"+std::to_string(lidar_time)+"_features.pcd", *feature_point_cloud);
-      cv::imwrite("/home/nico/datasets/eschlikon/raww/"+std::to_string(lidar_time)+"_colored_img.png", coloredImage);
-      cv::imwrite("/home/nico/datasets/eschlikon/raww/"+std::to_string(lidar_time)+"_img.png", image);*/
-
     }
   }
 };

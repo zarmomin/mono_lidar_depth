@@ -63,11 +63,6 @@ src/PlaneEstimationCalcMaxSpanningTriangle.cpp
 src/PlaneEstimationCheckPlanar.cpp
 src/PlaneEstimationLeastSquares.cpp
 src/PlaneEstimationMEstimator.cpp
-src/RansacPlane.cpp
-src/RoadDepthEstimatorBase.cpp
-src/RoadDepthEstimatorLeastSquares.cpp
-src/RoadDepthEstimatorMaxSpanningTriangle.cpp
-src/RoadDepthEstimatorMEstimator.cpp
 src/TresholdDepthGlobal.cpp
 src/TresholdDepthLocal.cpp)
 
